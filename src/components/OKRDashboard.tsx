@@ -8,7 +8,6 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { OKRModal } from './OKRModal';
 import { CreateObjectiveForm } from './CreateObjectiveForm';
-import { CategoryManager } from './CategoryManager';
 
 type ViewMode = 'List' | 'Timeline' | 'Calendar';
 
@@ -27,7 +26,6 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [viewMode, setViewMode] = useState<ViewMode>('List');
   const [isLoading, setIsLoading] = useState(true);
-  const [isManagingCategories, setIsManagingCategories] = useState(false);
   const [isCreatingObjective, setIsCreatingObjective] = useState(false);
   const [editingObjective, setEditingObjective] = useState<Objective | null>(null);
 
@@ -127,7 +125,6 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
       if (error) throw error;
 
       await fetchCategories();
-      setIsManagingCategories(false);
       showNotification('Category added successfully');
     } catch (error) {
       console.error('Error adding category:', error);
@@ -454,26 +451,14 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
           </div>
 
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <CategoryFilter
-                categories={categories}
-                selectedCategory={selectedCategory}
-                onCategorySelect={setSelectedCategory}
-                onAddCategory={handleAddCategory}
-                onDeleteCategory={handleDeleteCategory}
-                isDarkMode={isDarkMode}
-              />
-              <button
-                onClick={() => setIsManagingCategories(true)}
-                className={`ml-4 px-3 py-1 text-sm font-medium rounded-lg transition-colors ${
-                  isDarkMode
-                    ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                Manage Categories
-              </button>
-            </div>
+            <CategoryFilter
+              categories={categories}
+              selectedCategory={selectedCategory}
+              onCategorySelect={setSelectedCategory}
+              onAddCategory={handleAddCategory}
+              onDeleteCategory={handleDeleteCategory}
+              isDarkMode={isDarkMode}
+            />
           </div>
 
           {/* Main content area */}
@@ -524,15 +509,6 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
           onSubmit={handleCreateObjective}
           onCancel={() => setIsCreatingObjective(false)}
           availableCategories={categories}
-          isDarkMode={isDarkMode}
-        />
-      )}
-
-      {isManagingCategories && (
-        <CategoryManager
-          categories={categories}
-          onAddCategory={handleAddCategory}
-          onDeleteCategory={handleDeleteCategory}
           isDarkMode={isDarkMode}
         />
       )}
