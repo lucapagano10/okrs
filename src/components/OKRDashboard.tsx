@@ -22,6 +22,11 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
   const [timeFilter, setTimeFilter] = useState<'all' | 'current' | 'past' | 'future'>('all');
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState<'success' | 'error'>('success');
 
   // Fetch objectives and categories when user changes
   useEffect(() => {
@@ -31,13 +36,25 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
     }
   }, [user]);
 
-  // Filter objectives based on time filter
+  // Filter objectives based on search query and time filter
   useEffect(() => {
-    if (timeFilter === 'all') {
-      setFilteredObjectives(objectives);
-    } else {
+    let filtered = objectives;
+
+    // Apply search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(obj =>
+        obj.title.toLowerCase().includes(query) ||
+        obj.description.toLowerCase().includes(query) ||
+        obj.category.toLowerCase().includes(query) ||
+        obj.keyResults.some(kr => kr.description.toLowerCase().includes(query))
+      );
+    }
+
+    // Apply time filter
+    if (timeFilter !== 'all') {
       const now = new Date();
-      setFilteredObjectives(objectives.filter(obj => {
+      filtered = filtered.filter(obj => {
         const startDate = new Date(obj.startDate);
         const endDate = new Date(obj.endDate);
 
@@ -51,12 +68,15 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
           default:
             return true;
         }
-      }));
+      });
     }
-  }, [timeFilter, objectives]);
+
+    setFilteredObjectives(filtered);
+  }, [timeFilter, objectives, searchQuery]);
 
   const fetchObjectives = async () => {
     if (!user?.id) return;
+    setIsLoading(true);
 
     try {
       const { data: objectives, error } = await supabase
@@ -94,9 +114,13 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
           }))
         }));
         setObjectives(formattedObjectives);
+        showNotification('Objectives loaded successfully');
       }
     } catch (error) {
       console.error('Error fetching objectives:', error);
+      showNotification('Failed to load objectives', 'error');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -261,155 +285,143 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
     setCategoryToDelete(null);
   };
 
-  const handleEditObjective = async (objective: Omit<Objective, 'id' | 'progress' | 'userId' | 'status'>) => {
-    if (!user?.id || !editingObjective) return;
-
-    try {
-      const { error: objectiveError } = await supabase
-        .from('objectives')
-        .update({
-          title: objective.title,
-          description: objective.description,
-          category: objective.category,
-          start_date: objective.startDate.toISOString(),
-          end_date: objective.endDate.toISOString(),
-        })
-        .eq('id', editingObjective.id)
-        .eq('user_id', user.id);
-
-      if (objectiveError) throw objectiveError;
-
-      // Delete existing key results
-      await supabase
-        .from('key_results')
-        .delete()
-        .eq('objective_id', editingObjective.id);
-
-      // Add new key results
-      const keyResultPromises = objective.keyResults.map(kr =>
-        supabase
-          .from('key_results')
-          .insert({
-            description: kr.description,
-            target_value: kr.targetValue,
-            current_value: kr.currentValue || 0,
-            unit: kr.unit,
-            start_date: kr.startDate.toISOString(),
-            end_date: kr.endDate.toISOString(),
-            progress: kr.progress || 0,
-            objective_id: editingObjective.id,
-            status: kr.status || 'not-started'
-          })
-      );
-
-      await Promise.all(keyResultPromises);
-      await fetchObjectives();
-      setEditingObjective(null);
-      setIsFormOpen(false);
-    } catch (error) {
-      console.error('Error updating objective:', error);
+  const handleEditObjective = (objectiveId: string) => {
+    const objective = objectives.find(obj => obj.id === objectiveId);
+    if (objective) {
+      setEditingObjective(objective);
+      setIsFormOpen(true);
     }
   };
 
   const timeGroups = groupObjectivesByTime(filteredObjectives);
 
+  const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
+    setToastMessage(message);
+    setToastType(type);
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 3000);
+  };
+
+  const groupedObjectives = groupObjectivesByTime(filteredObjectives);
+
   return (
-    <div className={`min-h-screen p-6 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col space-y-4 md:space-y-0 md:flex-row md:items-center md:justify-between mb-8">
-          <div>
-            <h1 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-              OKR Dashboard
-            </h1>
-          </div>
-          <div className="flex flex-col space-y-4 md:space-y-0 md:flex-row md:items-center md:gap-4">
-            <TimeFilter
-              selectedFilter={timeFilter}
-              onFilterChange={setTimeFilter}
-              isDarkMode={isDarkMode}
-            />
-            <CategoryManager
-              categories={categories}
-              onAddCategory={handleAddCategory}
-              onDeleteCategory={handleDeleteCategory}
-              isDarkMode={isDarkMode}
-            />
-            <button
-              onClick={() => setIsFormOpen(true)}
-              className={`px-4 py-2 text-sm font-medium text-white rounded-md ${
-                isDarkMode ? 'bg-blue-500 hover:bg-blue-600' : 'bg-blue-600 hover:bg-blue-700'
-              }`}
-            >
-              Add Objective
-            </button>
-          </div>
+    <div className={`min-h-screen p-6 ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'}`}>
+      {/* Toast Notification */}
+      {showToast && (
+        <div className={`fixed top-4 right-4 px-4 py-2 rounded-lg shadow-lg transition-all transform ${
+          toastType === 'success'
+            ? isDarkMode ? 'bg-green-800 text-green-100' : 'bg-green-100 text-green-800'
+            : isDarkMode ? 'bg-red-800 text-red-100' : 'bg-red-100 text-red-800'
+        }`}>
+          {toastMessage}
+        </div>
+      )}
+
+      <div className="max-w-7xl mx-auto space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <h1 className="text-3xl font-bold">My OKRs</h1>
+          <button
+            onClick={() => setIsFormOpen(true)}
+            className={`px-4 py-2 rounded-lg font-medium ${
+              isDarkMode
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : 'bg-blue-600 text-white hover:bg-blue-700'
+            }`}
+          >
+            Add New Objective
+          </button>
         </div>
 
-        {timeGroups.length > 0 ? (
-          timeGroups.map(group => (
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="w-full sm:w-64">
+            <input
+              type="text"
+              placeholder="Search objectives..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={`w-full px-4 py-2 rounded-lg ${
+                isDarkMode
+                  ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-400'
+                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+              }`}
+            />
+          </div>
+          <TimeFilter
+            selectedFilter={timeFilter}
+            onFilterChange={setTimeFilter}
+            isDarkMode={isDarkMode}
+          />
+        </div>
+
+        <CategoryManager
+          categories={categories}
+          onAddCategory={handleAddCategory}
+          onDeleteCategory={handleDeleteCategory}
+          isDarkMode={isDarkMode}
+        />
+
+        {isLoading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-current border-t-transparent"></div>
+          </div>
+        ) : groupedObjectives.length === 0 ? (
+          <div className={`text-center py-12 rounded-lg ${
+            isDarkMode ? 'bg-gray-800' : 'bg-white'
+          }`}>
+            {searchQuery ? (
+              <>
+                <h3 className="text-xl font-medium mb-2">No matching objectives found</h3>
+                <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Try adjusting your search or filter criteria
+                </p>
+              </>
+            ) : (
+              <>
+                <h3 className="text-xl font-medium mb-2">No objectives yet</h3>
+                <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Click "Add New Objective" to get started
+                </p>
+              </>
+            )}
+          </div>
+        ) : (
+          groupedObjectives.map((group) => (
             <TimeGroupView
-              key={group.label}
+              key={`${group.startDate.toISOString()}-${group.endDate.toISOString()}`}
               group={group}
-              onEdit={(objectiveId) => {
-                const objective = objectives.find(obj => obj.id === objectiveId);
-                if (objective) {
-                  setEditingObjective(objective);
-                  setIsFormOpen(true);
-                }
-              }}
+              onEdit={handleEditObjective}
               onDelete={handleDeleteObjective}
               onUpdateProgress={handleUpdateProgress}
               isDarkMode={isDarkMode}
             />
           ))
-        ) : (
-          <div className={`flex flex-col items-center justify-center py-12 px-4 border-2 border-dashed rounded-lg ${
-            isDarkMode ? 'border-gray-700 text-gray-400' : 'border-gray-300 text-gray-500'
-          }`}>
-            <svg className="w-12 h-12 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V7a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <p className="text-lg">No objectives found</p>
-            <button
-              onClick={() => setIsFormOpen(true)}
-              className={`mt-4 font-medium ${
-                isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'
-              }`}
-            >
-              Create your first objective
-            </button>
-          </div>
         )}
+      </div>
 
-        {isFormOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className={`relative w-full max-w-4xl rounded-lg shadow-xl ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
-              <CreateObjectiveForm
-                onSubmit={editingObjective ? handleEditObjective : handleAddObjective}
-                onCancel={() => {
-                  setIsFormOpen(false);
-                  setEditingObjective(null);
-                }}
-                initialObjective={editingObjective}
-                isDarkMode={isDarkMode}
-                availableCategories={categories}
-              />
-            </div>
-          </div>
-        )}
-
-        <ConfirmationModal
-          isOpen={showDeleteModal}
-          onClose={() => {
-            setShowDeleteModal(false);
-            setCategoryToDelete(null);
-          }}
-          onConfirm={confirmDeleteCategory}
-          title="Delete Category"
-          message={`Are you sure you want to delete this category? This will also delete all objectives in this category.`}
+      {/* Existing modals and forms */}
+      {isFormOpen && (
+        <CreateObjectiveForm
+          onClose={() => setIsFormOpen(false)}
+          onSubmit={handleAddObjective}
+          categories={categories}
+          editingObjective={editingObjective}
           isDarkMode={isDarkMode}
         />
-      </div>
+      )}
+
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={() => {
+          if (categoryToDelete) {
+            handleConfirmDeleteCategory(categoryToDelete);
+            setCategoryToDelete(null);
+          }
+        }}
+        title="Delete Category"
+        message="Are you sure you want to delete this category? All objectives in this category will also be deleted."
+        isDarkMode={isDarkMode}
+      />
     </div>
   );
 };
