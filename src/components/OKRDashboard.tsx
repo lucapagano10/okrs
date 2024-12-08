@@ -24,7 +24,6 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
   const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
   const [timeFilter, setTimeFilter] = useState<'all' | 'current' | 'past' | 'future'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -307,11 +306,28 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
     setIsModalOpen(true);
   };
 
-  const handleSaveObjective = async (objectiveData: Partial<Objective>) => {
+  const handleSaveObjective = async (objectiveData: {
+    title: string;
+    description: string;
+    category: string;
+    startDate: string;
+    endDate: string;
+    keyResults: {
+      id?: string;
+      description: string;
+      targetValue: number;
+      currentValue: number;
+      unit: string;
+      startDate: string;
+      endDate: string;
+    }[];
+  }) => {
+    if (!user?.id) return;
+
     try {
       if (selectedObjective) {
         // Update existing objective
-        const { error } = await supabase
+        const { error: objError } = await supabase
           .from('objectives')
           .update({
             title: objectiveData.title,
@@ -319,27 +335,33 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
             category: objectiveData.category,
             start_date: objectiveData.startDate,
             end_date: objectiveData.endDate,
-            updated_at: new Date().toISOString()
+            status: 'active' as const
           })
           .eq('id', selectedObjective.id);
 
-        if (error) throw error;
+        if (objError) throw objError;
 
-        // Update key results
-        for (const kr of objectiveData.keyResults || []) {
+        // Update or create key results
+        for (const kr of objectiveData.keyResults) {
           if (kr.id) {
-            await supabase
+            // Update existing key result
+            const { error: krError } = await supabase
               .from('key_results')
               .update({
                 description: kr.description,
                 target_value: kr.targetValue,
                 current_value: kr.currentValue || 0,
                 unit: kr.unit,
-                updated_at: new Date().toISOString()
+                start_date: kr.startDate,
+                end_date: kr.endDate,
+                status: 'active' as const
               })
               .eq('id', kr.id);
+
+            if (krError) throw krError;
           } else {
-            await supabase
+            // Create new key result
+            const { error: krError } = await supabase
               .from('key_results')
               .insert([{
                 description: kr.description,
@@ -347,13 +369,13 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
                 current_value: kr.currentValue || 0,
                 unit: kr.unit,
                 objective_id: selectedObjective.id,
-                start_date: objectiveData.startDate,
-                end_date: objectiveData.endDate,
-                status: 'active',
-                progress: 0,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
+                start_date: kr.startDate,
+                end_date: kr.endDate,
+                status: 'active' as const,
+                progress: 0
               }]);
+
+            if (krError) throw krError;
           }
         }
       } else {
@@ -366,11 +388,9 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
             category: objectiveData.category,
             start_date: objectiveData.startDate,
             end_date: objectiveData.endDate,
-            user_id: user?.id,
+            user_id: user.id,
             progress: 0,
-            status: 'active',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+            status: 'active' as const
           }])
           .select()
           .single();
@@ -378,8 +398,8 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
         if (objError || !objective) throw objError;
 
         // Create key results
-        for (const kr of objectiveData.keyResults || []) {
-          await supabase
+        for (const kr of objectiveData.keyResults) {
+          const { error: krError } = await supabase
             .from('key_results')
             .insert([{
               description: kr.description,
@@ -387,21 +407,22 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
               current_value: kr.currentValue || 0,
               unit: kr.unit,
               objective_id: objective.id,
-              start_date: objectiveData.startDate,
-              end_date: objectiveData.endDate,
+              start_date: kr.startDate,
+              end_date: kr.endDate,
               progress: 0,
-              status: 'active',
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
+              status: 'active' as const
             }]);
+
+          if (krError) throw krError;
         }
       }
 
-      // Refresh objectives
       fetchObjectives();
       setIsModalOpen(false);
+      showNotification('Objective saved successfully');
     } catch (error) {
       console.error('Error saving objective:', error);
+      showNotification('Failed to save objective', 'error');
     }
   };
 

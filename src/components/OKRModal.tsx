@@ -1,19 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { Objective, KeyResult } from '../types/okr';
-import { ProgressChart } from './ProgressChart';
+import React from 'react';
+import { Objective } from '../types/okr';
 
 interface OKRModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (objective: Partial<Objective>) => void;
-  objective?: Objective;
+  objective: Objective;
   isDarkMode?: boolean;
 }
 
 export const OKRModal: React.FC<OKRModalProps> = ({
   isOpen,
   onClose,
-  onSave,
   objective,
   isDarkMode = false,
 }) => {

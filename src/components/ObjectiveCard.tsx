@@ -1,6 +1,5 @@
 import React from 'react';
 import { Objective, KeyResultStatus } from '../types/okr';
-import { ProgressBar } from './ProgressBar';
 
 interface ObjectiveCardProps {
   objective: Objective;
@@ -84,6 +83,13 @@ export const ObjectiveCard: React.FC<ObjectiveCardProps> = ({
     return status.split('-').map(word =>
       word.charAt(0).toUpperCase() + word.slice(1)
     ).join(' ');
+  };
+
+  const handleProgressChange = (objectiveId: string, keyResultId: string, value: string) => {
+    const numValue = Number(value);
+    if (!isNaN(numValue)) {
+      onUpdateProgress(objectiveId, keyResultId, numValue);
+    }
   };
 
   return (
@@ -189,7 +195,7 @@ export const ObjectiveCard: React.FC<ObjectiveCardProps> = ({
                           <input
                             type="number"
                             value={kr.currentValue}
-                            onChange={(e) => onUpdateProgress(objective.id, kr.id, Number(e.target.value))}
+                            onChange={(e) => handleProgressChange(objective.id, kr.id, e.target.value)}
                             className={`w-16 px-2 py-1 text-sm border rounded-md ${
                               isDarkMode
                                 ? 'bg-gray-700 border-gray-600 text-gray-200'
