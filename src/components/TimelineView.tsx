@@ -277,7 +277,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                           </div>
                         </div>
                         <div className="mt-2 space-y-1.5">
-                          {objective.keyResults.map((kr, index) => (
+                          {objective.keyResults.map((kr) => (
                             <div key={kr.id} className={`text-xs flex items-start gap-1.5 ${
                               isDarkMode ? 'text-gray-400' : 'text-gray-500'
                             }`}>
