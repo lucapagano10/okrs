@@ -32,17 +32,17 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
   );
 
   const getBackgroundColor = (progress: number) => {
-    if (progress >= 80) return isDarkMode ? 'bg-green-500/5' : 'bg-green-50';
-    if (progress >= 50) return isDarkMode ? 'bg-blue-500/5' : 'bg-blue-50';
-    if (progress >= 20) return isDarkMode ? 'bg-yellow-500/5' : 'bg-yellow-50';
-    return isDarkMode ? 'bg-red-500/5' : 'bg-red-50';
+    if (progress >= 80) return isDarkMode ? 'bg-green-500/10' : 'bg-green-50';
+    if (progress >= 50) return isDarkMode ? 'bg-blue-500/10' : 'bg-blue-50';
+    if (progress >= 20) return isDarkMode ? 'bg-yellow-500/10' : 'bg-yellow-50';
+    return isDarkMode ? 'bg-red-500/10' : 'bg-red-50';
   };
 
   const getProgressColor = (progress: number) => {
-    if (progress >= 80) return isDarkMode ? 'bg-green-500/30' : 'bg-green-500/30';
-    if (progress >= 50) return isDarkMode ? 'bg-blue-500/30' : 'bg-blue-500/30';
-    if (progress >= 20) return isDarkMode ? 'bg-yellow-500/30' : 'bg-yellow-500/30';
-    return isDarkMode ? 'bg-red-500/30' : 'bg-red-500/30';
+    if (progress >= 80) return isDarkMode ? 'bg-green-500/20' : 'bg-green-500/20';
+    if (progress >= 50) return isDarkMode ? 'bg-blue-500/20' : 'bg-blue-500/20';
+    if (progress >= 20) return isDarkMode ? 'bg-yellow-500/20' : 'bg-yellow-500/20';
+    return isDarkMode ? 'bg-red-500/20' : 'bg-red-500/20';
   };
 
   const getStatusColor = (progress: number) => {
@@ -132,7 +132,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
                 <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                  {formatDateDisplay(earliestDate instanceof Date ? earliestDate.toISOString() : earliestDate)}
+                  Start: {formatDateDisplay(earliestDate instanceof Date ? earliestDate.toISOString() : earliestDate)}
                 </span>
               </div>
               <div className={`px-4 py-2 rounded-lg ${
@@ -142,7 +142,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
                 <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                  {formatDateDisplay(latestDate instanceof Date ? latestDate.toISOString() : latestDate)}
+                  End: {formatDateDisplay(latestDate instanceof Date ? latestDate.toISOString() : latestDate)}
                 </span>
               </div>
             </div>
@@ -151,13 +151,13 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
           {/* Timeline */}
           <div className="relative">
             {/* Timeline Base Line */}
-            <div className={`absolute top-6 left-0 right-0 h-1 ${
+            <div className={`absolute top-8 left-0 right-0 h-0.5 ${
               isDarkMode ? 'bg-gray-800' : 'bg-gray-200'
-            } rounded-full`} />
+            }`} />
 
             {/* Today Marker */}
             <div
-              className={`absolute top-0 h-12 w-0.5 ${isDarkMode ? 'bg-blue-400' : 'bg-blue-500'}`}
+              className={`absolute top-0 h-16 w-0.5 ${isDarkMode ? 'bg-blue-400' : 'bg-blue-500'}`}
               style={{
                 left: `${((new Date().getTime() - new Date(earliestDate).getTime()) /
                   (new Date(latestDate).getTime() - new Date(earliestDate).getTime())) * 100}%`,
@@ -176,7 +176,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
             </div>
 
             {/* Objectives */}
-            <div className="space-y-3 pt-12">
+            <div className="space-y-4 pt-16">
               {sortedObjectives.map((objective) => {
                 const { left, width, widthValue } = getPositionAndWidth(objective.startDate, objective.endDate);
                 const daysRemaining = getDaysRemaining(objective.endDate);
@@ -185,21 +185,20 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                 return (
                   <div
                     key={objective.id}
-                    className="relative h-[4.5rem] group"
+                    className="relative h-16 group"
                     onClick={() => onObjectiveClick(objective.id)}
                   >
                     {/* Objective Bar */}
                     <div
-                      className={`absolute h-[4.5rem] rounded-xl cursor-pointer transition-all shadow-sm
+                      className={`absolute h-14 rounded-lg cursor-pointer transition-all shadow-sm
                         ${getBackgroundColor(objective.progress)}
                         ${isDarkMode ? 'hover:ring-1 ring-gray-700' : 'hover:ring-1 ring-gray-300'}
-                        hover:translate-y-[-1px] hover:shadow-md transition-all duration-200
-                        border ${isDarkMode ? 'border-gray-700/50' : 'border-gray-200/50'}`}
+                        hover:translate-y-[-1px] hover:shadow-md transition-all duration-200`}
                       style={{ left, width }}
                     >
                       {/* Progress Bar */}
                       <div
-                        className={`h-full rounded-xl ${getProgressColor(objective.progress)} transition-all duration-300`}
+                        className={`h-full rounded-lg ${getProgressColor(objective.progress)} transition-all duration-300`}
                         style={{ width: `${objective.progress}%` }}
                       />
 
@@ -208,10 +207,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                         isDarkMode ? 'text-gray-100' : 'text-gray-900'
                       }`}>
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-8 h-8 flex-shrink-0 relative">
-                            <div className={`absolute inset-0 rounded-full ${
-                              isDarkMode ? 'bg-gray-800/50' : 'bg-white/50'
-                            } backdrop-blur-sm`}></div>
+                          <div className="w-8 h-8 flex-shrink-0">
                             <ProgressChart
                               progress={objective.progress}
                               size={32}
@@ -223,35 +219,23 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                             <div className="font-medium truncate">
                               {objective.title}
                             </div>
-                            <div className={`text-xs flex items-center gap-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                              <span className="flex items-center gap-1">
-                                <svg className="w-3 h-3 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                </svg>
-                                {objective.keyResults.length} Key Results
-                              </span>
-                              <span className="text-gray-400">•</span>
-                              <span className="flex items-center gap-1">
-                                <svg className="w-3 h-3 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                                {formatDateDisplay(objective.startDate)}
-                              </span>
+                            <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                              {objective.keyResults.length} Key Results
                             </div>
                           </div>
                         </div>
                         {widthValue > 15 && (
                           <div className={`text-sm whitespace-nowrap ml-4 font-medium ${getStatusColor(objective.progress)}`}>
                             {isOverdue ? (
-                              <span className={`${isDarkMode ? 'text-red-400' : 'text-red-600'} flex items-center gap-1.5`}>
-                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <span className={`${isDarkMode ? 'text-red-400' : 'text-red-600'} flex items-center gap-1`}>
+                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                                 {Math.abs(daysRemaining)}d overdue
                               </span>
                             ) : (
-                              <span className="flex items-center gap-1.5">
-                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <span className="flex items-center gap-1">
+                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                                 {daysRemaining}d remaining
@@ -264,27 +248,20 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                       {/* Tooltip */}
                       <div className={`absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2
                         px-4 py-3 rounded-lg text-sm opacity-0 group-hover:opacity-100 transition-opacity
-                        pointer-events-none z-30 shadow-lg backdrop-blur-sm
-                        ${isDarkMode ? 'bg-gray-800/95' : 'bg-white/95'}`}
+                        pointer-events-none z-30 shadow-lg ${
+                          isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'
+                        }`}
                       >
-                        <div className="font-medium mb-1">{objective.title}</div>
-                        <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'} space-y-1`}>
-                          <div className="flex items-center gap-1.5">
-                            <svg className="w-3 h-3 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                            {formatDateDisplay(objective.startDate)} - {formatDateDisplay(objective.endDate)}
-                          </div>
+                        <div className="font-medium">{objective.title}</div>
+                        <div className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>
+                          {formatDateDisplay(objective.startDate)} - {formatDateDisplay(objective.endDate)}
                         </div>
                         <div className="mt-2 space-y-1.5">
                           {objective.keyResults.map((kr) => (
-                            <div key={kr.id} className={`text-xs flex items-start gap-1.5 ${
+                            <div key={kr.id} className={`text-xs ${
                               isDarkMode ? 'text-gray-400' : 'text-gray-500'
                             }`}>
-                              <svg className="w-3 h-3 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                              </svg>
-                              <span className="line-clamp-2">{kr.description}</span>
+                              • {kr.description}
                             </div>
                           ))}
                         </div>
