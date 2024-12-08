@@ -10,7 +10,7 @@ import { OKRModal } from './OKRModal';
 import { CreateObjectiveForm } from './CreateObjectiveForm';
 import { CategoryManager } from './CategoryManager';
 
-type ViewMode = 'list' | 'timeline' | 'calendar';
+type ViewMode = 'List' | 'Timeline' | 'Calendar';
 
 interface OKRDashboardProps {
   isDarkMode?: boolean;
@@ -25,7 +25,7 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
-  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [viewMode, setViewMode] = useState<ViewMode>('List');
   const [isLoading, setIsLoading] = useState(true);
   const [isManagingCategories, setIsManagingCategories] = useState(false);
   const [isCreatingObjective, setIsCreatingObjective] = useState(false);
@@ -163,10 +163,6 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
     if (objective) {
       setEditingObjective(objective);
     }
-  };
-
-  const handleAddNewObjective = () => {
-    setIsCreatingObjective(true);
   };
 
   const handleSaveObjective = async (objectiveData: Partial<Objective>) => {
@@ -422,7 +418,7 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
         <div className="flex flex-col gap-8">
           <div className="flex items-center justify-between">
             <button
-              onClick={handleAddNewObjective}
+              onClick={() => setIsCreatingObjective(true)}
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                 isDarkMode
                   ? 'bg-blue-600 text-white hover:bg-blue-700'
@@ -433,10 +429,10 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
             </button>
 
             <div className="flex items-center gap-4">
-              <div className="flex items-center rounded-lg overflow-hidden border ${
+              <div className={`flex items-center rounded-lg overflow-hidden border ${
                 isDarkMode ? 'border-gray-800' : 'border-gray-200'
-              }">
-                {(['list', 'timeline', 'calendar'] as ViewMode[]).map((mode) => (
+              }`}>
+                {(['List', 'Timeline', 'Calendar'] as const).map((mode: ViewMode) => (
                   <button
                     key={mode}
                     onClick={() => setViewMode(mode)}
@@ -457,30 +453,25 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
             </div>
           </div>
 
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <h2 className={`text-sm font-medium ${
-                  isDarkMode ? 'text-gray-400' : 'text-gray-500'
-                }`}>
-                  Filter by Category
-                </h2>
-                <CategoryFilter
-                  categories={categories}
-                  selectedCategory={selectedCategory}
-                  onCategorySelect={setSelectedCategory}
-                  onAddCategory={handleAddCategory}
-                  onDeleteCategory={handleDeleteCategory}
-                  isDarkMode={isDarkMode}
-                />
-              </div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <CategoryFilter
+                categories={categories}
+                selectedCategory={selectedCategory}
+                onCategorySelect={setSelectedCategory}
+                onAddCategory={handleAddCategory}
+                onDeleteCategory={handleDeleteCategory}
+                isDarkMode={isDarkMode}
+              />
               <button
                 onClick={() => setIsManagingCategories(true)}
-                className={`text-sm font-medium text-blue-500 hover:text-blue-600 transition-colors ${
-                  isDarkMode ? 'text-blue-400 hover:text-blue-300' : ''
+                className={`ml-4 px-3 py-1 text-sm font-medium rounded-lg transition-colors ${
+                  isDarkMode
+                    ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
-                + Add New
+                Manage Categories
               </button>
             </div>
           </div>
@@ -493,7 +484,7 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
               </div>
             ) : (
               <>
-                {viewMode === 'list' && (
+                {viewMode === 'List' && (
                   <div className="space-y-6">
                     {Object.entries(groupObjectivesByTime(filteredObjectives)).map(([key, group]) => (
                       <TimeGroupView
@@ -507,14 +498,14 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
                     ))}
                   </div>
                 )}
-                {viewMode === 'timeline' && (
+                {viewMode === 'Timeline' && (
                   <TimelineView
                     objectives={filteredObjectives}
                     onObjectiveClick={handleEditObjective}
                     isDarkMode={isDarkMode}
                   />
                 )}
-                {viewMode === 'calendar' && (
+                {viewMode === 'Calendar' && (
                   <CalendarView
                     objectives={filteredObjectives}
                     onObjectiveClick={handleEditObjective}
