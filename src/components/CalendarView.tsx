@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Objective } from '../types/okr';
+import { ProgressChart } from './ProgressChart';
 
 interface CalendarViewProps {
   objectives: Objective[];
@@ -22,34 +23,17 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
   };
 
-  const getProgressColor = (progress: number) => {
-    if (progress >= 80) return isDarkMode ? 'bg-green-500/20' : 'bg-green-100';
-    if (progress >= 50) return isDarkMode ? 'bg-blue-500/20' : 'bg-blue-100';
-    if (progress >= 20) return isDarkMode ? 'bg-yellow-500/20' : 'bg-yellow-100';
-    return isDarkMode ? 'bg-red-500/20' : 'bg-red-100';
+  const getMonthData = () => {
+    const daysInMonth = getDaysInMonth(currentDate);
+    const firstDayOfMonth = getFirstDayOfMonth(currentDate);
+    const days = Array(daysInMonth).fill(0).map((_, i) => i + 1);
+    const blanks = Array(firstDayOfMonth).fill(null);
+    return [...blanks, ...days];
   };
 
-  const getTextColor = (progress: number) => {
-    if (progress >= 80) return isDarkMode ? 'text-green-400' : 'text-green-700';
-    if (progress >= 50) return isDarkMode ? 'text-blue-400' : 'text-blue-700';
-    if (progress >= 20) return isDarkMode ? 'text-yellow-400' : 'text-yellow-700';
-    return isDarkMode ? 'text-red-400' : 'text-red-700';
-  };
-
-  const daysInMonth = getDaysInMonth(currentDate);
-  const firstDayOfMonth = getFirstDayOfMonth(currentDate);
-  const monthName = currentDate.toLocaleString('default', { month: 'long' });
-  const year = currentDate.getFullYear();
-
-  const previousMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1));
-  };
-
-  const nextMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1));
-  };
-
-  const getObjectivesForDate = (date: Date) => {
+  const getObjectivesForDay = (day: number) => {
+    if (!day) return [];
+    const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
     return objectives.filter(obj => {
       const start = new Date(obj.startDate);
       const end = new Date(obj.endDate);
@@ -57,8 +41,25 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     });
   };
 
-  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-  const blanks = Array.from({ length: firstDayOfMonth }, (_, i) => i);
+  const getProgressColor = (progress: number) => {
+    if (progress >= 80) return isDarkMode ? 'bg-green-500/20' : 'bg-green-100';
+    if (progress >= 50) return isDarkMode ? 'bg-blue-500/20' : 'bg-blue-100';
+    if (progress >= 20) return isDarkMode ? 'bg-yellow-500/20' : 'bg-yellow-100';
+    return isDarkMode ? 'bg-red-500/20' : 'bg-red-100';
+  };
+
+  const changeMonth = (offset: number) => {
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + offset, 1));
+  };
+
+  const isToday = (day: number) => {
+    const today = new Date();
+    return (
+      today.getDate() === day &&
+      today.getMonth() === currentDate.getMonth() &&
+      today.getFullYear() === currentDate.getFullYear()
+    );
+  };
 
   return (
     <div className={`p-6 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
@@ -69,90 +70,140 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         </h3>
         <div className="flex items-center gap-4">
           <button
-            onClick={previousMonth}
-            className={`p-1 rounded-full hover:bg-opacity-10 ${
-              isDarkMode ? 'hover:bg-gray-300' : 'hover:bg-gray-900'
+            onClick={() => changeMonth(-1)}
+            className={`p-2 rounded-lg transition-colors ${
+              isDarkMode
+                ? 'hover:bg-gray-700 text-gray-400'
+                : 'hover:bg-gray-100 text-gray-600'
             }`}
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
+            ←
           </button>
           <span className={`text-lg font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-            {monthName} {year}
+            {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
           </span>
           <button
-            onClick={nextMonth}
-            className={`p-1 rounded-full hover:bg-opacity-10 ${
-              isDarkMode ? 'hover:bg-gray-300' : 'hover:bg-gray-900'
+            onClick={() => changeMonth(1)}
+            className={`p-2 rounded-lg transition-colors ${
+              isDarkMode
+                ? 'hover:bg-gray-700 text-gray-400'
+                : 'hover:bg-gray-100 text-gray-600'
             }`}
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
+            →
           </button>
         </div>
       </div>
 
       {/* Calendar Grid */}
-      <div className="grid grid-cols-7 gap-px">
+      <div className="grid grid-cols-7 gap-px bg-gray-200 rounded-lg overflow-hidden">
         {/* Weekday Headers */}
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
           <div
             key={day}
             className={`p-2 text-center text-sm font-medium ${
-              isDarkMode ? 'text-gray-400' : 'text-gray-600'
+              isDarkMode ? 'bg-gray-800 text-gray-400' : 'bg-white text-gray-600'
             }`}
           >
             {day}
           </div>
         ))}
 
-        {/* Blank Days */}
-        {blanks.map(blank => (
-          <div
-            key={`blank-${blank}`}
-            className={isDarkMode ? 'bg-gray-800' : 'bg-white'}
-          />
-        ))}
-
         {/* Calendar Days */}
-        {days.map(day => {
-          const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-          const dayObjectives = getObjectivesForDate(date);
-          const isToday = new Date().toDateString() === date.toDateString();
+        {getMonthData().map((day, index) => {
+          const objectives = day ? getObjectivesForDay(day) : [];
+          const hasObjectives = objectives.length > 0;
 
           return (
             <div
-              key={day}
-              className={`min-h-[100px] p-2 border ${
-                isDarkMode
-                  ? 'border-gray-700 hover:bg-gray-700/30'
-                  : 'border-gray-200 hover:bg-gray-50'
-              } ${isToday ? (isDarkMode ? 'bg-blue-900/20' : 'bg-blue-50') : ''}`}
+              key={index}
+              className={`min-h-[120px] p-2 ${
+                isDarkMode ? 'bg-gray-800' : 'bg-white'
+              } relative group`}
             >
-              <div className={`text-sm font-medium mb-1 ${
-                isToday
-                  ? isDarkMode ? 'text-blue-400' : 'text-blue-600'
-                  : isDarkMode ? 'text-gray-300' : 'text-gray-700'
-              }`}>
-                {day}
-              </div>
-              <div className="space-y-1">
-                {dayObjectives.map(obj => (
+              {day && (
+                <>
                   <div
-                    key={obj.id}
-                    onClick={() => onEditObjective(obj.id)}
-                    className={`px-2 py-1 rounded text-xs cursor-pointer ${
-                      getProgressColor(obj.progress)
+                    className={`flex items-center justify-center w-8 h-8 mb-1 rounded-full ${
+                      isToday(day)
+                        ? isDarkMode
+                          ? 'bg-blue-500 text-white'
+                          : 'bg-blue-600 text-white'
+                        : isDarkMode
+                        ? 'text-gray-400'
+                        : 'text-gray-600'
                     }`}
                   >
-                    <div className={`font-medium truncate ${getTextColor(obj.progress)}`}>
-                      {obj.title}
-                    </div>
+                    {day}
                   </div>
-                ))}
-              </div>
+                  <div className="space-y-1">
+                    {objectives.slice(0, 3).map((obj) => (
+                      <div
+                        key={obj.id}
+                        onClick={() => onEditObjective(obj.id)}
+                        className={`p-1 rounded text-xs cursor-pointer transition-colors ${
+                          getProgressColor(obj.progress)
+                        } ${
+                          isDarkMode ? 'text-gray-200' : 'text-gray-700'
+                        } hover:brightness-110`}
+                      >
+                        <div className="flex items-center gap-1">
+                          <div className="w-3 h-3 flex-shrink-0">
+                            <ProgressChart
+                              progress={obj.progress}
+                              size={12}
+                              strokeWidth={2}
+                              isDarkMode={isDarkMode}
+                            />
+                          </div>
+                          <span className="truncate">{obj.title}</span>
+                        </div>
+                      </div>
+                    ))}
+                    {objectives.length > 3 && (
+                      <div className={`text-xs ${
+                        isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                      }`}>
+                        +{objectives.length - 3} more
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Hover Tooltip */}
+                  {hasObjectives && objectives.length > 3 && (
+                    <div className={`absolute left-0 top-full mt-2 w-64 p-3 rounded-lg shadow-lg
+                      opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none
+                      ${isDarkMode ? 'bg-gray-700' : 'bg-white'}`}
+                    >
+                      <div className="space-y-2">
+                        {objectives.map((obj) => (
+                          <div
+                            key={obj.id}
+                            className={`text-sm ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <div className="w-4 h-4">
+                                <ProgressChart
+                                  progress={obj.progress}
+                                  size={16}
+                                  strokeWidth={2}
+                                  isDarkMode={isDarkMode}
+                                />
+                              </div>
+                              <span className="font-medium">{obj.title}</span>
+                            </div>
+                            <div className={`text-xs mt-1 ${
+                              isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                            }`}>
+                              Progress: {obj.progress}%
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           );
         })}
