@@ -329,11 +329,11 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
         const { error: objError } = await supabase
           .from('objectives')
           .update({
-            title: objectiveData.title,
-            description: objectiveData.description,
-            category: objectiveData.category,
-            start_date: objectiveData.startDate,
-            end_date: objectiveData.endDate,
+            title: objectiveData.title || '',
+            description: objectiveData.description || '',
+            category: objectiveData.category || '',
+            start_date: objectiveData.startDate || new Date().toISOString(),
+            end_date: objectiveData.endDate || new Date().toISOString(),
             status: 'active' as const
           })
           .eq('id', selectedObjective.id);
@@ -347,12 +347,12 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
             const { error: krError } = await supabase
               .from('key_results')
               .update({
-                description: kr.description,
-                target_value: kr.targetValue,
+                description: kr.description || '',
+                target_value: kr.targetValue || 0,
                 current_value: kr.currentValue || 0,
-                unit: kr.unit,
-                start_date: kr.startDate,
-                end_date: kr.endDate,
+                unit: kr.unit || '',
+                start_date: kr.startDate || new Date().toISOString(),
+                end_date: kr.endDate || new Date().toISOString(),
                 status: 'active' as const
               })
               .eq('id', kr.id);
@@ -363,13 +363,13 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
             const { error: krError } = await supabase
               .from('key_results')
               .insert([{
-                description: kr.description,
-                target_value: kr.targetValue,
+                description: kr.description || '',
+                target_value: kr.targetValue || 0,
                 current_value: kr.currentValue || 0,
-                unit: kr.unit,
+                unit: kr.unit || '',
                 objective_id: selectedObjective.id,
-                start_date: kr.startDate,
-                end_date: kr.endDate,
+                start_date: kr.startDate || new Date().toISOString(),
+                end_date: kr.endDate || new Date().toISOString(),
                 status: 'active' as const,
                 progress: 0
               }]);
@@ -382,11 +382,11 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
         const { data: objective, error: objError } = await supabase
           .from('objectives')
           .insert([{
-            title: objectiveData.title,
-            description: objectiveData.description,
-            category: objectiveData.category,
-            start_date: objectiveData.startDate,
-            end_date: objectiveData.endDate,
+            title: objectiveData.title || '',
+            description: objectiveData.description || '',
+            category: objectiveData.category || '',
+            start_date: objectiveData.startDate || new Date().toISOString(),
+            end_date: objectiveData.endDate || new Date().toISOString(),
             user_id: user.id,
             progress: 0,
             status: 'active' as const
@@ -401,13 +401,13 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
           const { error: krError } = await supabase
             .from('key_results')
             .insert([{
-              description: kr.description,
-              target_value: kr.targetValue,
+              description: kr.description || '',
+              target_value: kr.targetValue || 0,
               current_value: kr.currentValue || 0,
-              unit: kr.unit,
+              unit: kr.unit || '',
               objective_id: objective.id,
-              start_date: kr.startDate,
-              end_date: kr.endDate,
+              start_date: kr.startDate || new Date().toISOString(),
+              end_date: kr.endDate || new Date().toISOString(),
               progress: 0,
               status: 'active' as const
             }]);
@@ -632,229 +632,20 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header with View Toggle */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <h1 className="text-3xl font-bold">My OKRs</h1>
-          <div className="flex items-center gap-4">
-            <div className="flex rounded-lg overflow-hidden border ${
-              isDarkMode ? 'border-gray-700' : 'border-gray-200'
-            }">
-              <button
-                onClick={() => setViewMode('list')}
-                className={`px-4 py-2 text-sm font-medium transition-colors ${
-                  viewMode === 'list'
-                    ? isDarkMode
-                      ? 'bg-gray-800 text-white'
-                      : 'bg-white text-gray-900'
-                    : isDarkMode
-                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                List
-              </button>
-              <button
-                onClick={() => setViewMode('timeline')}
-                className={`px-4 py-2 text-sm font-medium transition-colors ${
-                  viewMode === 'timeline'
-                    ? isDarkMode
-                      ? 'bg-gray-800 text-white'
-                      : 'bg-white text-gray-900'
-                    : isDarkMode
-                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                Timeline
-              </button>
-              <button
-                onClick={() => setViewMode('calendar')}
-                className={`px-4 py-2 text-sm font-medium transition-colors ${
-                  viewMode === 'calendar'
-                    ? isDarkMode
-                      ? 'bg-gray-800 text-white'
-                      : 'bg-white text-gray-900'
-                    : isDarkMode
-                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                Calendar
-              </button>
-            </div>
-            <button
-              onClick={handleAddNewObjective}
-              className={`px-4 py-2 rounded-lg font-medium ${
-                isDarkMode
-                  ? 'bg-blue-600 text-white hover:bg-blue-700'
-                  : 'bg-blue-600 text-white hover:bg-blue-700'
-              }`}
-            >
-              Add New Objective
-            </button>
+      <div className="max-w-7xl mx-auto">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+          <div>
+            <h1 className="text-3xl font-bold">Personal OKRs</h1>
+            <p className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
+              Track and manage your objectives and key results
+            </p>
           </div>
-        </div>
-
-        {/* Search and Filters */}
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="w-full sm:w-64">
-              <input
-                type="text"
-                placeholder="Search objectives..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className={`w-full px-4 py-2 rounded-lg ${
-                  isDarkMode
-                    ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-400'
-                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                }`}
-              />
-            </div>
-            {viewMode === 'list' && (
-              <TimeFilter
-                selectedFilter={timeFilter}
-                onFilterChange={setTimeFilter}
-                isDarkMode={isDarkMode}
-              />
-            )}
-          </div>
-
-          {/* Category Labels */}
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Add Category Button/Input */}
-            <div className="relative">
-              {isAddingCategory ? (
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    handleAddCategory(newCategoryInput);
-                  }}
-                  className="flex items-center"
-                >
-                  <input
-                    type="text"
-                    value={newCategoryInput}
-                    onChange={(e) => setNewCategoryInput(e.target.value)}
-                    placeholder="New category..."
-                    autoFocus
-                    className={`w-32 px-3 py-1 rounded-l-full text-sm transition-all outline-none ${
-                      isDarkMode
-                        ? 'bg-gray-800 text-white placeholder-gray-500 focus:bg-gray-700'
-                        : 'bg-white text-gray-900 placeholder-gray-400'
-                    } border-2 border-r-0 ${
-                      isDarkMode ? 'border-gray-700 focus:border-blue-500' : 'border-gray-200 focus:border-blue-500'
-                    }`}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Escape') {
-                        setIsAddingCategory(false);
-                        setNewCategoryInput('');
-                      }
-                    }}
-                    onBlur={() => {
-                      if (!newCategoryInput.trim()) {
-                        setIsAddingCategory(false);
-                      }
-                    }}
-                  />
-                  <button
-                    type="submit"
-                    className={`px-2 py-1 rounded-r-full text-sm font-medium transition-colors ${
-                      isDarkMode
-                        ? 'bg-gray-800 text-gray-300 hover:text-white border-2 border-l-0 border-gray-700'
-                        : 'bg-white text-gray-600 hover:text-gray-900 border-2 border-l-0 border-gray-200'
-                    }`}
-                  >
-                    Add
-                  </button>
-                </form>
-              ) : (
-                <button
-                  onClick={() => setIsAddingCategory(true)}
-                  className={`px-3 py-1 rounded-full text-sm font-medium transition-all ${
-                    isDarkMode
-                      ? 'bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white'
-                      : 'bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  } border-2 border-transparent hover:border-gray-200 flex items-center gap-1`}
-                >
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  <span>Add Category</span>
-                </button>
-              )}
-            </div>
-
-            {/* All Categories Label */}
-            <button
-              onClick={() => setCategoryFilter('all')}
-              className={`px-3 py-1 rounded-full text-sm font-medium transition-all ${
-                categoryFilter === 'all'
-                  ? isDarkMode
-                    ? 'bg-blue-600 text-white ring-2 ring-blue-500 ring-offset-2 ring-offset-gray-900'
-                    : 'bg-blue-600 text-white ring-2 ring-blue-500 ring-offset-2'
-                  : isDarkMode
-                  ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              All
-              <span className={`ml-2 px-1.5 py-0.5 rounded-full text-xs ${
-                categoryFilter === 'all'
-                  ? 'bg-white bg-opacity-20'
-                  : isDarkMode
-                  ? 'bg-gray-700'
-                  : 'bg-gray-200'
-              }`}>
-                {objectives.length}
-              </span>
-            </button>
-
-            {/* Category Labels */}
-            {categories.map(category => (
-              <div key={category} className="group relative">
-                <button
-                  onClick={() => setCategoryFilter(category)}
-                  className={`px-3 py-1 rounded-full text-sm font-medium transition-all ${
-                    categoryFilter === category
-                      ? isDarkMode
-                        ? 'bg-blue-600 text-white ring-2 ring-blue-500 ring-offset-2 ring-offset-gray-900'
-                        : 'bg-blue-600 text-white ring-2 ring-blue-500 ring-offset-2'
-                      : isDarkMode
-                      ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  {category.charAt(0).toUpperCase() + category.slice(1)}
-                  <span className={`ml-2 px-1.5 py-0.5 rounded-full text-xs ${
-                    categoryFilter === category
-                      ? 'bg-white bg-opacity-20'
-                      : isDarkMode
-                      ? 'bg-gray-700'
-                      : 'bg-gray-200'
-                  }`}>
-                    {categoryCounts[category] || 0}
-                  </span>
-                </button>
-
-                {/* Delete Button - Shows on Hover */}
-                <button
-                  onClick={() => handleDeleteCategory(category)}
-                  className={`absolute -right-2 -top-2 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity ${
-                    isDarkMode
-                      ? 'bg-gray-700 text-red-400 hover:bg-gray-600 hover:text-red-300'
-                      : 'bg-white text-red-500 hover:text-red-600 shadow-sm'
-                  }`}
-                  title="Delete Category"
-                >
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            ))}
-          </div>
+          <button
+            onClick={handleAddNewObjective}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Add New Objective
+          </button>
         </div>
 
         {/* Content */}
@@ -862,39 +653,21 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-4 border-current border-t-transparent"></div>
           </div>
-        ) : filteredObjectives.length === 0 ? (
-          <div className={`text-center py-12 rounded-lg ${
-            isDarkMode ? 'bg-gray-800' : 'bg-white'
-          }`}>
-            {searchQuery || categoryFilter !== 'all' ? (
-              <>
-                <h3 className="text-xl font-medium mb-2">No matching objectives found</h3>
-                <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Try adjusting your search or filter criteria
-                </p>
-              </>
-            ) : (
-              <>
-                <h3 className="text-xl font-medium mb-2">No objectives yet</h3>
-                <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Click "Add New Objective" to get started
-                </p>
-              </>
-            )}
-          </div>
         ) : (
           <>
             {viewMode === 'list' && (
-              groupedObjectives.map((group) => (
-                <TimeGroupView
-                  key={`${group.startDate.toISOString()}-${group.endDate.toISOString()}`}
-                  group={group}
-                  onEdit={handleEditObjective}
-                  onDelete={handleDeleteObjective}
-                  onUpdateProgress={handleUpdateProgress}
-                  isDarkMode={isDarkMode}
-                />
-              ))
+              <div className="space-y-8">
+                {Object.entries(groupObjectivesByTime(filteredObjectives)).map(([label, group]) => (
+                  <TimeGroupView
+                    key={label}
+                    group={group}
+                    onEdit={handleEditObjective}
+                    onDelete={handleDeleteObjective}
+                    onUpdateProgress={handleUpdateProgress}
+                    isDarkMode={isDarkMode}
+                  />
+                ))}
+              </div>
             )}
             {viewMode === 'timeline' && (
               <TimelineView
@@ -914,7 +687,7 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
         )}
       </div>
 
-      {/* Existing modals and forms */}
+      {/* Modals */}
       <OKRModal
         isOpen={isModalOpen}
         onClose={() => {
