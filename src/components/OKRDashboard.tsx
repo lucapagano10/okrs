@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Objective, groupObjectivesByTime, ObjectiveStatus, KeyResultStatus } from '../types/okr';
 import { TimeGroupView } from './TimeGroupView';
-import { TimeFilter } from './TimeFilter';
 import { TimelineView } from './TimelineView';
 import { CalendarView } from './CalendarView';
 import { supabase } from '../lib/supabase';
@@ -22,18 +21,15 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
   const [categories, setCategories] = useState<string[]>([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
-  const [timeFilter, setTimeFilter] = useState<'all' | 'current' | 'past' | 'future'>('all');
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState('');
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
-  const [isAddingCategory, setIsAddingCategory] = useState(false);
-  const [newCategoryInput, setNewCategoryInput] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedObjective, setSelectedObjective] = useState<Objective | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [newCategoryInput, setNewCategoryInput] = useState('');
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
 
   // Fetch objectives and categories when user changes
   useEffect(() => {
@@ -42,6 +38,11 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
       fetchCategories();
     }
   }, [user]);
+
+  // Update filtered objectives when objectives change
+  useEffect(() => {
+    setFilteredObjectives(objectives);
+  }, [objectives]);
 
   const fetchObjectives = async () => {
     if (!user?.id) return;
@@ -111,195 +112,7 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
     }
   };
 
-  // Filter objectives based on search query, time filter, and category filter
-  useEffect(() => {
-    let filtered = objectives;
-
-    // Apply search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(obj =>
-        obj.title.toLowerCase().includes(query) ||
-        obj.description.toLowerCase().includes(query) ||
-        obj.category.toLowerCase().includes(query) ||
-        obj.keyResults.some(kr => kr.description.toLowerCase().includes(query))
-      );
-    }
-
-    // Apply category filter
-    if (categoryFilter !== 'all') {
-      filtered = filtered.filter(obj => obj.category === categoryFilter);
-    }
-
-    // Apply time filter
-    if (timeFilter !== 'all') {
-      const now = new Date();
-      filtered = filtered.filter(obj => {
-        const startDate = new Date(obj.startDate);
-        const endDate = new Date(obj.endDate);
-
-        switch (timeFilter) {
-          case 'current':
-            return startDate <= now && endDate >= now;
-          case 'past':
-            return endDate < now;
-          case 'future':
-            return startDate > now;
-          default:
-            return true;
-        }
-      });
-    }
-
-    setFilteredObjectives(filtered);
-  }, [timeFilter, categoryFilter, objectives, searchQuery]);
-
-  const handleAddObjective = async (objectiveData: {
-    title: string;
-    description: string;
-    category: string;
-    startDate: string;
-    endDate: string;
-    keyResults: {
-      description: string;
-      targetValue: number;
-      currentValue: number;
-      unit: string;
-      startDate: string;
-      endDate: string;
-    }[];
-  }) => {
-    if (!user?.id) return;
-
-    try {
-      // First, create the objective
-      const objectiveToInsert = {
-        title: objectiveData.title,
-        description: objectiveData.description,
-        category: objectiveData.category,
-        start_date: objectiveData.startDate,
-        end_date: objectiveData.endDate,
-        user_id: user.id,
-        progress: 0,
-        status: 'not-started' as const
-      };
-
-      const { data: objective, error: objError } = await supabase
-        .from('objectives')
-        .insert([objectiveToInsert])
-        .select()
-        .single();
-
-      if (objError || !objective) throw objError;
-
-      // Then, create the key results
-      for (const kr of objectiveData.keyResults) {
-        const keyResultToInsert = {
-          description: kr.description,
-          target_value: kr.targetValue,
-          current_value: kr.currentValue || 0,
-          unit: kr.unit,
-          start_date: kr.startDate,
-          end_date: kr.endDate,
-          progress: 0,
-          objective_id: objective.id,
-          status: 'not-started' as const
-        };
-
-        const { error: krError } = await supabase
-          .from('key_results')
-          .insert([keyResultToInsert]);
-
-        if (krError) throw krError;
-      }
-
-      fetchObjectives();
-      setIsModalOpen(false);
-    } catch (error) {
-      console.error('Error in handleAddObjective:', error);
-    }
-  };
-
-  const handleUpdateObjective = async (objectiveData: {
-    title: string;
-    description: string;
-    category: string;
-    startDate: string;
-    endDate: string;
-    keyResults: {
-      id?: string;
-      description: string;
-      targetValue: number;
-      currentValue: number;
-      unit: string;
-      startDate: string;
-      endDate: string;
-    }[];
-  }, selectedObjective: { id: string }) => {
-    if (!user?.id) return;
-
-    try {
-      // Update objective
-      const { error: objError } = await supabase
-        .from('objectives')
-        .update({
-          title: objectiveData.title,
-          description: objectiveData.description,
-          category: objectiveData.category,
-          start_date: objectiveData.startDate,
-          end_date: objectiveData.endDate,
-          status: 'active' as const
-        })
-        .eq('id', selectedObjective.id);
-
-      if (objError) throw objError;
-
-      // Update or create key results
-      for (const kr of objectiveData.keyResults) {
-        if (kr.id) {
-          // Update existing key result
-          const { error: krError } = await supabase
-            .from('key_results')
-            .update({
-              description: kr.description,
-              target_value: kr.targetValue,
-              current_value: kr.currentValue || 0,
-              unit: kr.unit,
-              start_date: kr.startDate,
-              end_date: kr.endDate,
-              status: 'active' as const
-            })
-            .eq('id', kr.id);
-
-          if (krError) throw krError;
-        } else {
-          // Create new key result
-          const { error: krError } = await supabase
-            .from('key_results')
-            .insert([{
-              description: kr.description,
-              target_value: kr.targetValue,
-              current_value: kr.currentValue || 0,
-              unit: kr.unit,
-              objective_id: selectedObjective.id,
-              start_date: kr.startDate,
-              end_date: kr.endDate,
-              status: 'active' as const,
-              progress: 0
-            }]);
-
-          if (krError) throw krError;
-        }
-      }
-
-      fetchObjectives();
-      setIsModalOpen(false);
-    } catch (error) {
-      console.error('Error updating objective:', error);
-    }
-  };
-
-  const handleObjectiveClick = (objectiveId: string) => {
+  const handleEditObjective = (objectiveId: string) => {
     const objective = objectives.find(obj => obj.id === objectiveId);
     if (objective) {
       setSelectedObjective(objective);
@@ -310,14 +123,6 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
   const handleAddNewObjective = () => {
     setSelectedObjective(null);
     setIsModalOpen(true);
-  };
-
-  const handleEditObjective = (objectiveId: string) => {
-    const objective = objectives.find(obj => obj.id === objectiveId);
-    if (objective) {
-      setSelectedObjective(objective);
-      setIsModalOpen(true);
-    }
   };
 
   const handleSaveObjective = async (objectiveData: Partial<Objective>) => {
@@ -452,42 +257,50 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
     }
   };
 
-  const handleUpdateProgress = async (objectiveId: string, keyResultId: string, currentValue: number) => {
+  const handleUpdateKeyResult = async (objectiveId: string, keyResultId: string, currentValue: number) => {
+    if (!user?.id) {
+      console.error('No user ID available');
+      return;
+    }
+
     try {
-      const keyResult = objectives
-        .find(obj => obj.id === objectiveId)
-        ?.keyResults.find(kr => kr.id === keyResultId);
+      // First get the key result to calculate progress
+      const { data: keyResult, error: krError } = await supabase
+        .from('key_results')
+        .select('target_value')
+        .eq('id', keyResultId)
+        .single();
 
-      if (keyResult) {
-        const progress = (currentValue / keyResult.targetValue) * 100;
-
-        await supabase
-          .from('key_results')
-          .update({
-            current_value: currentValue,
-            progress
-          })
-          .eq('id', keyResultId);
-
-        // Update objective progress
-        const objective = objectives.find(obj => obj.id === objectiveId);
-        if (objective) {
-          const updatedKeyResults = objective.keyResults.map(kr =>
-            kr.id === keyResultId ? { ...kr, currentValue, progress } : kr
-          );
-          const overallProgress = updatedKeyResults.reduce((sum, kr) => sum + kr.progress, 0) / updatedKeyResults.length;
-
-          await supabase
-            .from('objectives')
-            .update({ progress: overallProgress })
-            .eq('id', objectiveId);
-
-          await fetchObjectives();
-          showNotification('Progress updated successfully');
-        }
+      if (krError) {
+        console.error('Error fetching key result:', krError);
+        throw krError;
       }
+
+      if (!keyResult) {
+        console.error('No key result found with ID:', keyResultId);
+        throw new Error('Key result not found');
+      }
+
+      const progress = (currentValue / keyResult.target_value) * 100;
+
+      const { error } = await supabase
+        .from('key_results')
+        .update({
+          current_value: currentValue,
+          progress
+        })
+        .eq('id', keyResultId)
+        .eq('objective_id', objectiveId);
+
+      if (error) {
+        console.error('Error updating key result:', error);
+        throw error;
+      }
+
+      fetchObjectives();
+      showNotification('Progress updated successfully');
     } catch (error) {
-      console.error('Error updating progress:', error);
+      console.error('Error in handleUpdateKeyResult:', error);
       showNotification('Failed to update progress', 'error');
     }
   };
@@ -554,8 +367,6 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
     }
   };
 
-  const groupedObjectives = groupObjectivesByTime(filteredObjectives);
-
   // Get category counts
   const categoryCounts = objectives.reduce((acc, obj) => {
     acc[obj.category] = (acc[obj.category] || 0) + 1;
@@ -567,56 +378,6 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
     setToastType(type);
     setShowToast(true);
     setTimeout(() => setShowToast(false), 3000);
-  };
-
-  const handleUpdateKeyResult = async (objectiveId: string, keyResultId: string, currentValue: number) => {
-    if (!user?.id) {
-      console.error('No user ID available');
-      return;
-    }
-
-    console.log('Updating key result:', { objectiveId, keyResultId, currentValue });
-
-    try {
-      // First get the key result to calculate progress
-      const { data: keyResult, error: krError } = await supabase
-        .from('key_results')
-        .select('target_value')
-        .eq('id', keyResultId)
-        .single();
-
-      if (krError) {
-        console.error('Error fetching key result:', krError);
-        throw krError;
-      }
-
-      if (!keyResult) {
-        console.error('No key result found with ID:', keyResultId);
-        throw new Error('Key result not found');
-      }
-
-      const progress = (currentValue / keyResult.target_value) * 100;
-      console.log('Calculated progress:', progress);
-
-      const { error } = await supabase
-        .from('key_results')
-        .update({
-          current_value: currentValue,
-          progress
-        })
-        .eq('id', keyResultId)
-        .eq('objective_id', objectiveId);
-
-      if (error) {
-        console.error('Error updating key result:', error);
-        throw error;
-      }
-
-      console.log('Successfully updated key result');
-      fetchObjectives();
-    } catch (error) {
-      console.error('Error in handleUpdateKeyResult:', error);
-    }
   };
 
   return (
@@ -640,12 +401,128 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
               Track and manage your objectives and key results
             </p>
           </div>
-          <button
-            onClick={handleAddNewObjective}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Add New Objective
-          </button>
+          <div className="flex items-center gap-4">
+            {/* View Mode Switcher */}
+            <div className="flex rounded-lg shadow-sm">
+              <button
+                onClick={() => setViewMode('list')}
+                className={`px-4 py-2 text-sm font-medium rounded-l-lg ${
+                  viewMode === 'list'
+                    ? 'bg-blue-600 text-white'
+                    : isDarkMode
+                    ? 'bg-gray-700 text-gray-200 hover:bg-gray-600'
+                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                List
+              </button>
+              <button
+                onClick={() => setViewMode('timeline')}
+                className={`px-4 py-2 text-sm font-medium ${
+                  viewMode === 'timeline'
+                    ? 'bg-blue-600 text-white'
+                    : isDarkMode
+                    ? 'bg-gray-700 text-gray-200 hover:bg-gray-600'
+                    : 'bg-white text-gray-700 border-y border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                Timeline
+              </button>
+              <button
+                onClick={() => setViewMode('calendar')}
+                className={`px-4 py-2 text-sm font-medium rounded-r-lg ${
+                  viewMode === 'calendar'
+                    ? 'bg-blue-600 text-white'
+                    : isDarkMode
+                    ? 'bg-gray-700 text-gray-200 hover:bg-gray-600'
+                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                Calendar
+              </button>
+            </div>
+            <button
+              onClick={handleAddNewObjective}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Add New Objective
+            </button>
+          </div>
+        </div>
+
+        {/* Category Management */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+              Categories
+            </h2>
+            {isAddingCategory ? (
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={newCategoryInput}
+                  onChange={(e) => setNewCategoryInput(e.target.value)}
+                  placeholder="Enter category name"
+                  className={`px-3 py-1 text-sm rounded-md ${
+                    isDarkMode
+                      ? 'bg-gray-700 border-gray-600 text-white'
+                      : 'border-gray-300 text-gray-900'
+                  }`}
+                />
+                <button
+                  onClick={() => handleAddCategory(newCategoryInput)}
+                  className="px-3 py-1 text-sm bg-green-600 text-white rounded-md hover:bg-green-700"
+                >
+                  Add
+                </button>
+                <button
+                  onClick={() => {
+                    setIsAddingCategory(false);
+                    setNewCategoryInput('');
+                  }}
+                  className={`px-3 py-1 text-sm rounded-md ${
+                    isDarkMode
+                      ? 'bg-gray-700 text-gray-200 hover:bg-gray-600'
+                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setIsAddingCategory(true)}
+                className={`px-3 py-1 text-sm rounded-md ${
+                  isDarkMode
+                    ? 'bg-gray-700 text-gray-200 hover:bg-gray-600'
+                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                Add Category
+              </button>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {categories.map((category) => (
+              <div
+                key={category}
+                className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
+                  isDarkMode ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-700'
+                }`}
+              >
+                {category}
+                <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  ({categoryCounts[category] || 0})
+                </span>
+                <button
+                  onClick={() => handleDeleteCategory(category)}
+                  className="ml-1 text-red-500 hover:text-red-600"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Content */}
@@ -663,7 +540,7 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
                     group={group}
                     onEdit={handleEditObjective}
                     onDelete={handleDeleteObjective}
-                    onUpdateProgress={handleUpdateProgress}
+                    onUpdateProgress={handleUpdateKeyResult}
                     isDarkMode={isDarkMode}
                   />
                 ))}
