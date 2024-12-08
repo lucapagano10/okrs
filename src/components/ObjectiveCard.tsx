@@ -1,5 +1,6 @@
 import React from 'react';
-import { Objective, getKeyResultStatus, formatDate, calculateDaysRemaining } from '../types/okr';
+import { Objective, KeyResultStatus } from '../types/okr';
+import { ProgressBar } from './ProgressBar';
 
 interface ObjectiveCardProps {
   objective: Objective;
@@ -16,6 +17,47 @@ export const ObjectiveCard: React.FC<ObjectiveCardProps> = ({
   onUpdateProgress,
   isDarkMode = false,
 }) => {
+  const formatDateDisplay = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
+  const calculateDaysRemaining = (endDateStr: string) => {
+    const today = new Date();
+    const endDate = new Date(endDateStr);
+    return Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  };
+
+  const getKeyResultStatus = (kr: { progress: number; endDate: string; currentValue: number; targetValue: number }): KeyResultStatus => {
+    const daysRemaining = calculateDaysRemaining(kr.endDate);
+
+    if (kr.currentValue >= kr.targetValue) {
+      return 'completed';
+    }
+
+    if (daysRemaining < 0) {
+      return 'overdue';
+    }
+
+    if (kr.progress >= 1) {
+      return 'completed';
+    }
+
+    if (daysRemaining <= 7 && kr.progress < 0.8) {
+      return 'at-risk';
+    }
+
+    if (kr.progress > 0) {
+      return 'in-progress';
+    }
+
+    return 'not-started';
+  };
+
   const getProgressColor = (progress: number) => {
     if (progress >= 80) return isDarkMode ? 'bg-green-500' : 'bg-green-600';
     if (progress >= 50) return isDarkMode ? 'bg-blue-500' : 'bg-blue-600';
@@ -23,7 +65,7 @@ export const ObjectiveCard: React.FC<ObjectiveCardProps> = ({
     return isDarkMode ? 'bg-red-500' : 'bg-red-600';
   };
 
-  const getStatusColor = (status: NonNullable<ReturnType<typeof getKeyResultStatus>>) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed':
         return isDarkMode ? 'text-green-400' : 'text-green-600';
@@ -69,7 +111,7 @@ export const ObjectiveCard: React.FC<ObjectiveCardProps> = ({
             <div className={`mt-2 text-xs ${
               isDarkMode ? 'text-gray-500' : 'text-gray-500'
             }`}>
-              {formatDate(objective.startDate)} - {formatDate(objective.endDate)}
+              {formatDateDisplay(objective.startDate)} - {formatDateDisplay(objective.endDate)}
             </div>
           </div>
           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -177,7 +219,7 @@ export const ObjectiveCard: React.FC<ObjectiveCardProps> = ({
                           <span className={`text-xs ${
                             isDarkMode ? 'text-gray-500' : 'text-gray-500'
                           }`}>
-                            {formatDate(kr.startDate)} - {formatDate(kr.endDate)}
+                            {formatDateDisplay(kr.startDate)} - {formatDateDisplay(kr.endDate)}
                           </span>
                         </div>
                       </div>

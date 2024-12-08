@@ -8,6 +8,8 @@ import { CalendarView } from './CalendarView';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { ConfirmationModal } from './ConfirmationModal';
+import { OKRModal } from './OKRModal';
+import { validateObjective, validateKeyResult } from '../types/okr';
 
 type ViewMode = 'list' | 'timeline' | 'calendar';
 
@@ -34,6 +36,8 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [newCategoryInput, setNewCategoryInput] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedObjective, setSelectedObjective] = useState<Objective | undefined>();
 
   // Fetch objectives and categories when user changes
   useEffect(() => {
@@ -45,7 +49,6 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
 
   const fetchObjectives = async () => {
     if (!user?.id) return;
-    setIsLoading(true);
 
     try {
       const { data: objectives, error } = await supabase
@@ -64,32 +67,29 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
           title: obj.title,
           description: obj.description,
           category: obj.category,
-          startDate: new Date(obj.start_date),
-          endDate: new Date(obj.end_date),
+          startDate: obj.start_date,
+          endDate: obj.end_date,
           progress: obj.progress,
-          userId: obj.user_id,
           status: obj.status as ObjectiveStatus,
-          keyResults: obj.key_results.map((kr: any) => ({
+          user_id: obj.user_id,
+          keyResults: obj.key_results.map(kr => ({
             id: kr.id,
             description: kr.description,
             targetValue: kr.target_value,
             currentValue: kr.current_value,
             unit: kr.unit,
-            startDate: new Date(kr.start_date),
-            endDate: new Date(kr.end_date),
+            startDate: kr.start_date,
+            endDate: kr.end_date,
             progress: kr.progress,
-            objectiveId: kr.objective_id,
-            status: kr.status as KeyResultStatus
+            status: kr.status as KeyResultStatus,
+            objective_id: kr.objective_id
           }))
         }));
+
         setObjectives(formattedObjectives);
-        showNotification('Objectives loaded successfully');
       }
     } catch (error) {
       console.error('Error fetching objectives:', error);
-      showNotification('Failed to load objectives', 'error');
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -155,71 +155,264 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
     setFilteredObjectives(filtered);
   }, [timeFilter, categoryFilter, objectives, searchQuery]);
 
-  const handleAddObjective = async (objective: Omit<Objective, 'id' | 'progress' | 'userId' | 'status'>) => {
+  const handleAddObjective = async (objectiveData: {
+    title: string;
+    description: string;
+    category: string;
+    startDate: string;
+    endDate: string;
+    keyResults: {
+      description: string;
+      targetValue: number;
+      currentValue: number;
+      unit: string;
+      startDate: string;
+      endDate: string;
+    }[];
+  }) => {
     if (!user?.id) return;
 
     try {
-      const { data: newObjective, error: objectiveError } = await supabase
+      // First, create the objective
+      const objectiveToInsert = {
+        title: objectiveData.title,
+        description: objectiveData.description,
+        category: objectiveData.category,
+        start_date: objectiveData.startDate,
+        end_date: objectiveData.endDate,
+        user_id: user.id,
+        progress: 0,
+        status: 'not-started' as const
+      };
+
+      const { data: objective, error: objError } = await supabase
         .from('objectives')
-        .insert([{
-          title: objective.title,
-          description: objective.description,
-          category: objective.category,
-          start_date: objective.startDate.toISOString(),
-          end_date: objective.endDate.toISOString(),
-          progress: 0,
-          user_id: user.id,
-          status: 'not-started'
-        }])
+        .insert(objectiveToInsert)
         .select()
         .single();
 
-      if (objectiveError) throw objectiveError;
+      if (objError || !objective) throw objError;
 
-      if (newObjective) {
-        const keyResultPromises = objective.keyResults.map(kr =>
-          supabase
-            .from('key_results')
-            .insert([{
-              description: kr.description,
-              target_value: kr.targetValue,
-              current_value: 0,
-              unit: kr.unit,
-              start_date: kr.startDate.toISOString(),
-              end_date: kr.endDate.toISOString(),
-              progress: 0,
-              objective_id: newObjective.id,
-              status: 'not-started'
-            }])
-        );
+      // Then, create the key results
+      for (const kr of objectiveData.keyResults) {
+        const keyResultToInsert = {
+          description: kr.description,
+          target_value: kr.targetValue,
+          current_value: kr.currentValue || 0,
+          unit: kr.unit,
+          start_date: kr.startDate,
+          end_date: kr.endDate,
+          progress: 0,
+          objective_id: objective.id,
+          status: 'not-started' as const
+        };
 
-        await Promise.all(keyResultPromises);
-        await fetchObjectives();
-        showNotification('Objective created successfully');
+        const { error: krError } = await supabase
+          .from('key_results')
+          .insert(keyResultToInsert);
+
+        if (krError) throw krError;
       }
+
+      fetchObjectives();
     } catch (error) {
-      console.error('Error adding objective:', error);
-      showNotification('Failed to create objective', 'error');
+      console.error('Error in handleAddObjective:', error);
     }
-    setIsFormOpen(false);
+  };
+
+  const handleUpdateObjective = async (objectiveData: {
+    title: string;
+    description: string;
+    category: string;
+    startDate: string;
+    endDate: string;
+    keyResults: {
+      description: string;
+      targetValue: number;
+      currentValue: number;
+      unit: string;
+      startDate: string;
+      endDate: string;
+    }[];
+  }, selectedObjective: { id: string }) => {
+    if (!user?.id) return;
+
+    try {
+      // Update objective
+      const { error: objError } = await supabase
+        .from('objectives')
+        .update({
+          title: objectiveData.title,
+          description: objectiveData.description,
+          category: objectiveData.category,
+          start_date: objectiveData.startDate,
+          end_date: objectiveData.endDate,
+          status: 'active' as const
+        })
+        .eq('id', selectedObjective.id);
+
+      if (objError) throw objError;
+
+      // Update key results
+      for (const kr of objectiveData.keyResults) {
+        const keyResultToInsert = {
+          description: kr.description,
+          target_value: kr.targetValue,
+          current_value: kr.currentValue || 0,
+          unit: kr.unit,
+          start_date: kr.startDate,
+          end_date: kr.endDate,
+          progress: 0,
+          objective_id: selectedObjective.id,
+          status: 'active' as const
+        };
+
+        const { error: krError } = await supabase
+          .from('key_results')
+          .insert(keyResultToInsert);
+
+        if (krError) throw krError;
+      }
+
+      fetchObjectives();
+    } catch (error) {
+      console.error('Error updating objective:', error);
+    }
   };
 
   const handleEditObjective = (objectiveId: string) => {
     const objective = objectives.find(obj => obj.id === objectiveId);
-    if (objective) {
-      setEditingObjective(objective);
-      setIsFormOpen(true);
+    setSelectedObjective(objective);
+    setIsModalOpen(true);
+  };
+
+  const handleCreateObjective = () => {
+    setSelectedObjective(undefined);
+    setIsModalOpen(true);
+  };
+
+  const handleSaveObjective = async (objectiveData: Partial<Objective>) => {
+    try {
+      if (selectedObjective) {
+        // Update existing objective
+        const { error } = await supabase
+          .from('objectives')
+          .update({
+            title: objectiveData.title,
+            description: objectiveData.description,
+            category: objectiveData.category,
+            start_date: objectiveData.startDate,
+            end_date: objectiveData.endDate,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', selectedObjective.id);
+
+        if (error) throw error;
+
+        // Update key results
+        for (const kr of objectiveData.keyResults || []) {
+          if (kr.id) {
+            await supabase
+              .from('key_results')
+              .update({
+                description: kr.description,
+                target_value: kr.targetValue,
+                current_value: kr.currentValue || 0,
+                unit: kr.unit,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', kr.id);
+          } else {
+            await supabase
+              .from('key_results')
+              .insert([{
+                description: kr.description,
+                target_value: kr.targetValue,
+                current_value: kr.currentValue || 0,
+                unit: kr.unit,
+                objective_id: selectedObjective.id,
+                start_date: objectiveData.startDate,
+                end_date: objectiveData.endDate,
+                status: 'active',
+                progress: 0,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              }]);
+          }
+        }
+      } else {
+        // Create new objective
+        const { data: objective, error: objError } = await supabase
+          .from('objectives')
+          .insert([{
+            title: objectiveData.title,
+            description: objectiveData.description,
+            category: objectiveData.category,
+            start_date: objectiveData.startDate,
+            end_date: objectiveData.endDate,
+            user_id: user?.id,
+            progress: 0,
+            status: 'active',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }])
+          .select()
+          .single();
+
+        if (objError || !objective) throw objError;
+
+        // Create key results
+        for (const kr of objectiveData.keyResults || []) {
+          await supabase
+            .from('key_results')
+            .insert([{
+              description: kr.description,
+              target_value: kr.targetValue,
+              current_value: kr.currentValue || 0,
+              unit: kr.unit,
+              objective_id: objective.id,
+              start_date: objectiveData.startDate,
+              end_date: objectiveData.endDate,
+              progress: 0,
+              status: 'active',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }]);
+        }
+      }
+
+      // Refresh objectives
+      fetchObjectives();
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error('Error saving objective:', error);
     }
   };
 
-  const handleDeleteObjective = async (id: string) => {
+  const handleDeleteObjective = async (objectiveId: string) => {
+    if (!user?.id) return;
+
     try {
-      await supabase.from('objectives').delete().eq('id', id);
-      await fetchObjectives();
-      showNotification('Objective deleted successfully');
+      // Delete key results first
+      const { error: krError } = await supabase
+        .from('key_results')
+        .delete()
+        .eq('objective_id', objectiveId);
+
+      if (krError) throw krError;
+
+      // Then delete the objective
+      const { error: objError } = await supabase
+        .from('objectives')
+        .delete()
+        .eq('id', objectiveId)
+        .eq('user_id', user.id);
+
+      if (objError) throw objError;
+
+      fetchObjectives();
     } catch (error) {
       console.error('Error deleting objective:', error);
-      showNotification('Failed to delete objective', 'error');
     }
   };
 
@@ -340,6 +533,56 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
     setTimeout(() => setShowToast(false), 3000);
   };
 
+  const handleUpdateKeyResult = async (objectiveId: string, keyResultId: string, currentValue: number) => {
+    if (!user?.id) {
+      console.error('No user ID available');
+      return;
+    }
+
+    console.log('Updating key result:', { objectiveId, keyResultId, currentValue });
+
+    try {
+      // First get the key result to calculate progress
+      const { data: keyResult, error: krError } = await supabase
+        .from('key_results')
+        .select('target_value')
+        .eq('id', keyResultId)
+        .single();
+
+      if (krError) {
+        console.error('Error fetching key result:', krError);
+        throw krError;
+      }
+
+      if (!keyResult) {
+        console.error('No key result found with ID:', keyResultId);
+        throw new Error('Key result not found');
+      }
+
+      const progress = (currentValue / keyResult.target_value) * 100;
+      console.log('Calculated progress:', progress);
+
+      const { error } = await supabase
+        .from('key_results')
+        .update({
+          current_value: currentValue,
+          progress
+        })
+        .eq('id', keyResultId)
+        .eq('objective_id', objectiveId);
+
+      if (error) {
+        console.error('Error updating key result:', error);
+        throw error;
+      }
+
+      console.log('Successfully updated key result');
+      fetchObjectives();
+    } catch (error) {
+      console.error('Error in handleUpdateKeyResult:', error);
+    }
+  };
+
   return (
     <div className={`min-h-screen p-6 ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'}`}>
       {/* Toast Notification */}
@@ -405,7 +648,7 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
               </button>
             </div>
             <button
-              onClick={() => setIsFormOpen(true)}
+              onClick={handleCreateObjective}
               className={`px-4 py-2 rounded-lg font-medium ${
                 isDarkMode
                   ? 'bg-blue-600 text-white hover:bg-blue-700'
@@ -636,15 +879,13 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
       </div>
 
       {/* Existing modals and forms */}
-      {isFormOpen && (
-        <CreateObjectiveForm
-          onCancel={() => setIsFormOpen(false)}
-          onSubmit={handleAddObjective}
-          availableCategories={categories}
-          initialObjective={editingObjective}
-          isDarkMode={isDarkMode}
-        />
-      )}
+      <OKRModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSaveObjective}
+        objective={selectedObjective}
+        isDarkMode={isDarkMode}
+      />
 
       <ConfirmationModal
         isOpen={showDeleteModal}

@@ -3,3 +3,8 @@ export { CreateObjectiveForm } from './CreateObjectiveForm';
 export { ObjectiveCard } from './ObjectiveCard';
 export { OKRDashboard } from './OKRDashboard';
 export { ProgressBar } from './ProgressBar';
+export { TimelineView } from './TimelineView';
+export { CalendarView } from './CalendarView';
+export { CategoryManager } from './CategoryManager';
+export { TimeFilter } from './TimeFilter';
+export { OKRModal } from './OKRModal';

@@ -1,26 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import { Objective, KeyResult } from '../types/okr';
+import { Objective, KeyResultStatus } from '../types/okr';
 
-interface CreateObjectiveFormProps {
-  onSubmit: (objective: Omit<Objective, 'id' | 'progress' | 'userId' | 'status'>) => void;
-  onCancel: () => void;
-  initialObjective?: Objective | null;
-  isDarkMode?: boolean;
-  availableCategories: string[];
-}
-
-interface KeyResultFormData extends Omit<KeyResult, 'objectiveId'> {
+interface KeyResultFormData {
   id: string;
   description: string;
   targetValue: number;
   currentValue: number;
   unit: string;
-  startDate: Date;
-  endDate: Date;
+  startDate: string;
+  endDate: string;
   progress: number;
-  status: 'not-started' | 'in-progress' | 'completed' | 'at-risk' | 'overdue';
+  status: KeyResultStatus;
+  objective_id?: string;
+}
+
+interface CreateObjectiveFormProps {
+  onSubmit: (objective: Omit<Objective, 'id' | 'progress' | 'user_id' | 'status'>) => void;
+  onCancel: () => void;
+  initialObjective?: Objective | null;
+  isDarkMode?: boolean;
+  availableCategories: string[];
 }
 
 export const CreateObjectiveForm: React.FC<CreateObjectiveFormProps> = ({
@@ -32,33 +33,29 @@ export const CreateObjectiveForm: React.FC<CreateObjectiveFormProps> = ({
 }) => {
   const [title, setTitle] = useState(initialObjective?.title || '');
   const [description, setDescription] = useState(initialObjective?.description || '');
-  const [category, setCategory] = useState(initialObjective?.category || availableCategories[0]);
-  const [startDate, setStartDate] = useState<Date>(initialObjective?.startDate || new Date());
-  const [endDate, setEndDate] = useState<Date>(initialObjective?.endDate || new Date());
+  const [category, setCategory] = useState(initialObjective?.category || (availableCategories.length > 0 ? availableCategories[0] : ''));
+  const [startDate, setStartDate] = useState<string>(
+    initialObjective?.startDate || new Date().toISOString()
+  );
+  const [endDate, setEndDate] = useState<string>(
+    initialObjective?.endDate || new Date().toISOString()
+  );
   const [keyResults, setKeyResults] = useState<KeyResultFormData[]>(
     initialObjective?.keyResults.map(kr => ({
-      id: kr.id,
-      description: kr.description,
-      targetValue: kr.targetValue,
-      currentValue: kr.currentValue,
-      unit: kr.unit,
-      startDate: kr.startDate,
-      endDate: kr.endDate,
-      progress: kr.progress,
+      ...kr,
+      id: kr.id || '',
       status: kr.status || 'not-started'
-    })) || [
-      {
-        id: '1',
-        description: '',
-        targetValue: 0,
-        currentValue: 0,
-        unit: '',
-        startDate: new Date(),
-        endDate: new Date(),
-        progress: 0,
-        status: 'not-started'
-      }
-    ]
+    })) || [{
+      id: '1',
+      description: '',
+      targetValue: 0,
+      currentValue: 0,
+      unit: '',
+      startDate: new Date().toISOString(),
+      endDate: new Date().toISOString(),
+      progress: 0,
+      status: 'not-started'
+    }]
   );
 
   useEffect(() => {
@@ -70,14 +67,8 @@ export const CreateObjectiveForm: React.FC<CreateObjectiveFormProps> = ({
       setEndDate(initialObjective.endDate);
       setKeyResults(
         initialObjective.keyResults.map(kr => ({
-          id: kr.id,
-          description: kr.description,
-          targetValue: kr.targetValue,
-          currentValue: kr.currentValue,
-          unit: kr.unit,
-          startDate: kr.startDate,
-          endDate: kr.endDate,
-          progress: kr.progress,
+          ...kr,
+          id: kr.id || '',
           status: kr.status || 'not-started'
         }))
       );
@@ -85,58 +76,74 @@ export const CreateObjectiveForm: React.FC<CreateObjectiveFormProps> = ({
   }, [initialObjective]);
 
   const handleStartDateChange = (date: Date | null) => {
-    if (date) {
-      setStartDate(date);
-      if (date > endDate) {
-        setEndDate(date);
-      }
-      // Update all key results that start before the new objective start date
-      setKeyResults(keyResults.map(kr => ({
-        ...kr,
-        startDate: kr.startDate < date ? date : kr.startDate,
-      })));
+    if (!date) return;
+    const dateStr = date.toISOString();
+    setStartDate(dateStr);
+
+    // If end date is before start date, update it
+    if (new Date(endDate) < date) {
+      setEndDate(dateStr);
     }
+
+    // Update key results
+    setKeyResults(prevKeyResults =>
+      prevKeyResults.map(kr => ({
+        ...kr,
+        startDate: new Date(kr.startDate) < date ? dateStr : kr.startDate
+      }))
+    );
   };
 
   const handleEndDateChange = (date: Date | null) => {
-    if (date) {
-      setEndDate(date);
-      // Update all key results that end after the new objective end date
-      setKeyResults(keyResults.map(kr => ({
+    if (!date) return;
+    const dateStr = date.toISOString();
+    setEndDate(dateStr);
+
+    // Update key results
+    setKeyResults(prevKeyResults =>
+      prevKeyResults.map(kr => ({
         ...kr,
-        endDate: kr.endDate > date ? date : kr.endDate,
-      })));
-    }
+        endDate: new Date(kr.endDate) > date ? dateStr : kr.endDate
+      }))
+    );
   };
 
   const handleKeyResultStartDateChange = (index: number, date: Date | null) => {
-    if (date) {
-      const newDate = date < startDate ? startDate : date;
-      setKeyResults(keyResults.map((kr, i) =>
+    if (!date) return;
+    const startDateObj = new Date(startDate);
+    const newDate = date < startDateObj ? startDateObj : date;
+    const dateStr = newDate.toISOString();
+
+    setKeyResults(prevKeyResults =>
+      prevKeyResults.map((kr, i) =>
         i === index
           ? {
               ...kr,
-              startDate: newDate,
-              endDate: newDate > kr.endDate ? newDate : kr.endDate,
+              startDate: dateStr,
+              endDate: new Date(kr.endDate) < newDate ? dateStr : kr.endDate
             }
           : kr
-      ));
-    }
+      )
+    );
   };
 
   const handleKeyResultEndDateChange = (index: number, date: Date | null) => {
-    if (date) {
-      const newDate = date > endDate ? endDate : date;
-      setKeyResults(keyResults.map((kr, i) =>
+    if (!date) return;
+    const endDateObj = new Date(endDate);
+    const newDate = date > endDateObj ? endDateObj : date;
+    const dateStr = newDate.toISOString();
+
+    setKeyResults(prevKeyResults =>
+      prevKeyResults.map((kr, i) =>
         i === index
           ? {
               ...kr,
-              endDate: newDate,
-              startDate: newDate < kr.startDate ? newDate : kr.startDate,
+              endDate: dateStr,
+              startDate: new Date(kr.startDate) > newDate ? dateStr : kr.startDate
             }
           : kr
-      ));
-    }
+      )
+    );
   };
 
   const addKeyResult = () => {
@@ -169,19 +176,22 @@ export const CreateObjectiveForm: React.FC<CreateObjectiveFormProps> = ({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const objective: Omit<Objective, 'id' | 'progress' | 'userId' | 'status'> = {
+    const objective: Omit<Objective, 'id' | 'progress' | 'user_id' | 'status'> = {
       title,
       description,
       category,
-      startDate,
-      endDate,
+      startDate: startDate,
+      endDate: endDate,
       keyResults: keyResults.map((kr, index) => ({
         ...kr,
         id: kr.id || `kr-${index + 1}`,
-        objectiveId: '' // Will be set by backend
+        startDate: kr.startDate,
+        endDate: kr.endDate,
+        status: 'not-started' as KeyResultStatus,
+        objective_id: undefined
       }))
     };
 
@@ -194,8 +204,8 @@ export const CreateObjectiveForm: React.FC<CreateObjectiveFormProps> = ({
       targetValue: 0,
       currentValue: 0,
       unit: '',
-      startDate: new Date(),
-      endDate: new Date(),
+      startDate: new Date().toISOString(),
+      endDate: new Date().toISOString(),
       progress: 0,
       status: 'not-started'
     }]);
@@ -267,11 +277,11 @@ export const CreateObjectiveForm: React.FC<CreateObjectiveFormProps> = ({
                   Start Date
                 </label>
                 <DatePicker
-                  selected={startDate}
+                  selected={new Date(startDate)}
                   onChange={handleStartDateChange}
                   selectsStart
-                  startDate={startDate}
-                  endDate={endDate}
+                  startDate={new Date(startDate)}
+                  endDate={new Date(endDate)}
                   className={datePickerClasses}
                   dateFormat="MMM d, yyyy"
                   placeholderText="Select start date"
@@ -283,12 +293,12 @@ export const CreateObjectiveForm: React.FC<CreateObjectiveFormProps> = ({
                   End Date
                 </label>
                 <DatePicker
-                  selected={endDate}
+                  selected={new Date(endDate)}
                   onChange={handleEndDateChange}
                   selectsEnd
-                  startDate={startDate}
-                  endDate={endDate}
-                  minDate={startDate}
+                  startDate={new Date(startDate)}
+                  endDate={new Date(endDate)}
+                  minDate={new Date(startDate)}
                   className={datePickerClasses}
                   dateFormat="MMM d, yyyy"
                   placeholderText="Select end date"
@@ -359,13 +369,13 @@ export const CreateObjectiveForm: React.FC<CreateObjectiveFormProps> = ({
                         Start Date
                       </label>
                       <DatePicker
-                        selected={kr.startDate}
+                        selected={new Date(kr.startDate)}
                         onChange={(date) => handleKeyResultStartDateChange(index, date)}
                         selectsStart
-                        startDate={kr.startDate}
-                        endDate={kr.endDate}
-                        minDate={startDate}
-                        maxDate={endDate}
+                        startDate={new Date(kr.startDate)}
+                        endDate={new Date(kr.endDate)}
+                        minDate={new Date(startDate)}
+                        maxDate={new Date(endDate)}
                         className={datePickerClasses}
                         dateFormat="MMM d, yyyy"
                         placeholderText="Select start date"
@@ -377,13 +387,13 @@ export const CreateObjectiveForm: React.FC<CreateObjectiveFormProps> = ({
                         End Date
                       </label>
                       <DatePicker
-                        selected={kr.endDate}
+                        selected={new Date(kr.endDate)}
                         onChange={(date) => handleKeyResultEndDateChange(index, date)}
                         selectsEnd
-                        startDate={kr.startDate}
-                        endDate={kr.endDate}
-                        minDate={kr.startDate}
-                        maxDate={endDate}
+                        startDate={new Date(kr.startDate)}
+                        endDate={new Date(kr.endDate)}
+                        minDate={new Date(kr.startDate)}
+                        maxDate={new Date(endDate)}
                         className={datePickerClasses}
                         dateFormat="MMM d, yyyy"
                         placeholderText="Select end date"

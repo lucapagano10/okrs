@@ -8,16 +8,16 @@ export type KeyResultStatus = 'not-started' | 'in-progress' | 'completed' | 'at-
 export type ObjectiveStatus = 'not-started' | 'in-progress' | 'completed' | 'at-risk';
 
 export interface KeyResult {
-  id: string;
+  id?: string;
   description: string;
   targetValue: number;
   currentValue: number;
   unit: string;
-  startDate: Date;
-  endDate: Date;
+  startDate: string;
+  endDate: string;
   progress: number;
-  objectiveId: string;
-  status?: KeyResultStatus;
+  status: KeyResultStatus;
+  objective_id?: string;
 }
 
 export interface Objective {
@@ -25,22 +25,24 @@ export interface Objective {
   title: string;
   description: string;
   category: string;
-  startDate: Date;
-  endDate: Date;
+  startDate: string;
+  endDate: string;
   progress: number;
+  status: ObjectiveStatus;
+  user_id: string;
   keyResults: KeyResult[];
-  userId: string;
-  status?: ObjectiveStatus;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export type TimePeriod = 'current-quarter' | 'next-quarter' | 'all';
 
 export interface TimeGroup {
   label: string;
-  status: 'past' | 'current' | 'future';
   startDate: Date;
   endDate: Date;
   objectives: Objective[];
+  status: 'past' | 'current' | 'future';
   progress: number;
 }
 
@@ -53,13 +55,15 @@ export const getStatus = (progress: number): ObjectiveStatus => {
 
 export const getKeyResultStatus = (kr: KeyResult): KeyResultStatus => {
   const now = new Date();
+  const endDate = new Date(kr.endDate);
+  const startDate = new Date(kr.startDate);
 
   if (kr.progress >= 100) return 'completed';
-  if (now > kr.endDate) return 'overdue';
+  if (now > endDate) return 'overdue';
   if (kr.progress === 0) return 'not-started';
 
-  const totalDuration = kr.endDate.getTime() - kr.startDate.getTime();
-  const elapsed = now.getTime() - kr.startDate.getTime();
+  const totalDuration = endDate.getTime() - startDate.getTime();
+  const elapsed = now.getTime() - startDate.getTime();
   const expectedProgress = (elapsed / totalDuration) * 100;
 
   if (kr.progress < expectedProgress - 20) return 'at-risk';
@@ -114,20 +118,22 @@ export const isInTimeRange = (date: Date, startDate: Date, endDate: Date): boole
   return date >= startDate && date <= endDate;
 };
 
-export const formatDateRange = (startDate: Date, endDate: Date): string => {
-  return `${formatDate(startDate)} - ${formatDate(endDate)}`;
+export const formatDateRange = (startDateStr: string, endDateStr: string): string => {
+  return `${formatDate(startDateStr)} - ${formatDate(endDateStr)}`;
 };
 
-export const formatDate = (date: Date): string => {
-  return new Date(date).toLocaleDateString('en-US', {
+export const formatDate = (dateStr: string): string => {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
   });
 };
 
-export const calculateDaysRemaining = (endDate: Date): number => {
+export const calculateDaysRemaining = (endDateStr: string): number => {
   const now = new Date();
+  const endDate = new Date(endDateStr);
   const diffTime = endDate.getTime() - now.getTime();
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 };
@@ -184,3 +190,85 @@ export const DEFAULT_CATEGORIES = [
 ] as const;
 
 export type DefaultCategory = typeof DEFAULT_CATEGORIES[number];
+
+// Type guards
+export const isValidObjective = (obj: any): obj is Objective => {
+  return (
+    typeof obj === 'object' &&
+    obj !== null &&
+    typeof obj.title === 'string' &&
+    typeof obj.description === 'string' &&
+    typeof obj.category === 'string' &&
+    typeof obj.startDate === 'string' &&
+    typeof obj.endDate === 'string' &&
+    typeof obj.progress === 'number' &&
+    typeof obj.user_id === 'string' &&
+    typeof obj.status === 'string' &&
+    Array.isArray(obj.keyResults)
+  );
+};
+
+export const isValidKeyResult = (kr: any): kr is KeyResult => {
+  return (
+    typeof kr === 'object' &&
+    kr !== null &&
+    typeof kr.description === 'string' &&
+    typeof kr.targetValue === 'number' &&
+    typeof kr.currentValue === 'number' &&
+    typeof kr.unit === 'string' &&
+    typeof kr.startDate === 'string' &&
+    typeof kr.endDate === 'string' &&
+    typeof kr.progress === 'number' &&
+    typeof kr.status === 'string'
+  );
+};
+
+// Debug utilities
+export const validateObjective = (obj: any): string[] => {
+  const errors: string[] = [];
+  if (!obj) {
+    errors.push('Objective is null or undefined');
+    return errors;
+  }
+
+  if (typeof obj !== 'object') {
+    errors.push('Objective is not an object');
+    return errors;
+  }
+
+  if (typeof obj.title !== 'string') errors.push('title must be a string');
+  if (typeof obj.description !== 'string') errors.push('description must be a string');
+  if (typeof obj.category !== 'string') errors.push('category must be a string');
+  if (typeof obj.startDate !== 'string') errors.push('startDate must be a string');
+  if (typeof obj.endDate !== 'string') errors.push('endDate must be a string');
+  if (typeof obj.progress !== 'number') errors.push('progress must be a number');
+  if (typeof obj.user_id !== 'string') errors.push('user_id must be a string');
+  if (typeof obj.status !== 'string') errors.push('status must be a string');
+  if (!Array.isArray(obj.keyResults)) errors.push('keyResults must be an array');
+
+  return errors;
+};
+
+export const validateKeyResult = (kr: any): string[] => {
+  const errors: string[] = [];
+  if (!kr) {
+    errors.push('KeyResult is null or undefined');
+    return errors;
+  }
+
+  if (typeof kr !== 'object') {
+    errors.push('KeyResult is not an object');
+    return errors;
+  }
+
+  if (typeof kr.description !== 'string') errors.push('description must be a string');
+  if (typeof kr.targetValue !== 'number') errors.push('targetValue must be a number');
+  if (typeof kr.currentValue !== 'number') errors.push('currentValue must be a number');
+  if (typeof kr.unit !== 'string') errors.push('unit must be a string');
+  if (typeof kr.startDate !== 'string') errors.push('startDate must be a string');
+  if (typeof kr.endDate !== 'string') errors.push('endDate must be a string');
+  if (typeof kr.progress !== 'number') errors.push('progress must be a number');
+  if (typeof kr.status !== 'string') errors.push('status must be a string');
+
+  return errors;
+};
