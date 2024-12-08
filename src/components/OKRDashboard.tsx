@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Objective, TimeGroup, groupObjectivesByTime } from '../types/okr';
-import { ObjectiveCard } from './ObjectiveCard';
+import { Objective, groupObjectivesByTime, ObjectiveStatus, KeyResultStatus } from '../types/okr';
 import { CreateObjectiveForm } from './CreateObjectiveForm';
 import { CategoryManager } from './CategoryManager';
 import { ConfirmationModal } from './ConfirmationModal';
@@ -30,6 +29,8 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
   }, [user]);
 
   const fetchObjectives = async () => {
+    if (!user?.id) return;
+
     try {
       const { data: objectives, error } = await supabase
         .from('objectives')
@@ -37,25 +38,32 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
           *,
           key_results (*)
         `)
-        .eq('user_id', user?.id);
+        .eq('user_id', user.id);
 
       if (error) throw error;
 
       if (objectives) {
         const formattedObjectives: Objective[] = objectives.map(obj => ({
-          ...obj,
           id: obj.id,
+          title: obj.title,
+          description: obj.description,
+          category: obj.category,
           startDate: new Date(obj.start_date),
           endDate: new Date(obj.end_date),
+          progress: obj.progress,
           userId: obj.user_id,
+          status: obj.status as ObjectiveStatus,
           keyResults: obj.key_results.map((kr: any) => ({
-            ...kr,
             id: kr.id,
+            description: kr.description,
             targetValue: kr.target_value,
             currentValue: kr.current_value,
+            unit: kr.unit,
             startDate: new Date(kr.start_date),
             endDate: new Date(kr.end_date),
-            objectiveId: kr.objective_id
+            progress: kr.progress,
+            objectiveId: kr.objective_id,
+            status: kr.status as KeyResultStatus
           }))
         }));
         setObjectives(formattedObjectives);
@@ -66,11 +74,13 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
   };
 
   const fetchCategories = async () => {
+    if (!user?.id) return;
+
     try {
       const { data: categories, error } = await supabase
         .from('user_categories')
         .select('name')
-        .eq('user_id', user?.id);
+        .eq('user_id', user.id);
 
       if (error) throw error;
 
@@ -82,7 +92,9 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
     }
   };
 
-  const handleAddObjective = async (objective: Omit<Objective, 'id' | 'progress' | 'userId'>) => {
+  const handleAddObjective = async (objective: Omit<Objective, 'id' | 'progress' | 'userId' | 'status'>) => {
+    if (!user?.id) return;
+
     try {
       const { data: newObjective, error: objectiveError } = await supabase
         .from('objectives')
@@ -93,7 +105,8 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
           start_date: objective.startDate.toISOString(),
           end_date: objective.endDate.toISOString(),
           progress: 0,
-          user_id: user?.id
+          user_id: user.id,
+          status: 'not-started'
         }])
         .select()
         .single();
@@ -112,7 +125,8 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
               start_date: kr.startDate.toISOString(),
               end_date: kr.endDate.toISOString(),
               progress: 0,
-              objective_id: newObjective.id
+              objective_id: newObjective.id,
+              status: 'not-started'
             }])
         );
 
@@ -173,10 +187,15 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
   };
 
   const handleAddCategory = async (name: string) => {
+    if (!user?.id) return;
+
     try {
       await supabase
         .from('user_categories')
-        .insert([{ name, user_id: user?.id }]);
+        .insert({
+          name,
+          user_id: user.id
+        });
       await fetchCategories();
     } catch (error) {
       console.error('Error adding category:', error);
@@ -213,6 +232,56 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
     }
     setShowDeleteModal(false);
     setCategoryToDelete(null);
+  };
+
+  const handleEditObjective = async (objective: Omit<Objective, 'id' | 'progress' | 'userId' | 'status'>) => {
+    if (!user?.id || !editingObjective) return;
+
+    try {
+      const { error: objectiveError } = await supabase
+        .from('objectives')
+        .update({
+          title: objective.title,
+          description: objective.description,
+          category: objective.category,
+          start_date: objective.startDate.toISOString(),
+          end_date: objective.endDate.toISOString(),
+        })
+        .eq('id', editingObjective.id)
+        .eq('user_id', user.id);
+
+      if (objectiveError) throw objectiveError;
+
+      // Delete existing key results
+      await supabase
+        .from('key_results')
+        .delete()
+        .eq('objective_id', editingObjective.id);
+
+      // Add new key results
+      const keyResultPromises = objective.keyResults.map(kr =>
+        supabase
+          .from('key_results')
+          .insert({
+            description: kr.description,
+            target_value: kr.targetValue,
+            current_value: kr.currentValue || 0,
+            unit: kr.unit,
+            start_date: kr.startDate.toISOString(),
+            end_date: kr.endDate.toISOString(),
+            progress: kr.progress || 0,
+            objective_id: editingObjective.id,
+            status: kr.status || 'not-started'
+          })
+      );
+
+      await Promise.all(keyResultPromises);
+      await fetchObjectives();
+      setEditingObjective(null);
+      setIsFormOpen(false);
+    } catch (error) {
+      console.error('Error updating objective:', error);
+    }
   };
 
   const timeGroups = groupObjectivesByTime(objectives);
