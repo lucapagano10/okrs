@@ -1,16 +1,18 @@
-import React from 'react';
-import { Objective } from '../types/okr';
+import React, { useState, useEffect } from 'react';
+import { Objective, KeyResult } from '../types/okr';
 
 interface OKRModalProps {
   isOpen: boolean;
   onClose: () => void;
-  objective: Objective;
+  onSave: (objective: Partial<Objective>) => void;
+  objective: Objective | null;
   isDarkMode?: boolean;
 }
 
 export const OKRModal: React.FC<OKRModalProps> = ({
   isOpen,
   onClose,
+  onSave,
   objective,
   isDarkMode = false,
 }) => {
@@ -19,34 +21,40 @@ export const OKRModal: React.FC<OKRModalProps> = ({
   const [category, setCategory] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [keyResults, setKeyResults] = useState<Partial<KeyResult>[]>([]);
+  const [keyResults, setKeyResults] = useState<Partial<KeyResult>[]>([{
+    description: '',
+    targetValue: 0,
+    currentValue: 0,
+    unit: '',
+    startDate: '',
+    endDate: ''
+  }]);
 
   useEffect(() => {
     if (objective) {
       setTitle(objective.title);
       setDescription(objective.description);
       setCategory(objective.category);
-      setStartDate(new Date(objective.startDate).toISOString().split('T')[0]);
-      setEndDate(new Date(objective.endDate).toISOString().split('T')[0]);
-      setKeyResults(objective.keyResults.map(kr => ({
-        description: kr.description,
-        targetValue: kr.targetValue,
-        currentValue: kr.currentValue,
-        unit: kr.unit
-      })));
+      setStartDate(objective.startDate);
+      setEndDate(objective.endDate);
+      setKeyResults(objective.keyResults);
     } else {
-      resetForm();
+      // Reset form when creating new objective
+      setTitle('');
+      setDescription('');
+      setCategory('');
+      setStartDate('');
+      setEndDate('');
+      setKeyResults([{
+        description: '',
+        targetValue: 0,
+        currentValue: 0,
+        unit: '',
+        startDate: '',
+        endDate: ''
+      }]);
     }
   }, [objective]);
-
-  const resetForm = () => {
-    setTitle('');
-    setDescription('');
-    setCategory('');
-    setStartDate('');
-    setEndDate('');
-    setKeyResults([{ description: '', targetValue: 0, currentValue: 0, unit: '' }]);
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,15 +62,22 @@ export const OKRModal: React.FC<OKRModalProps> = ({
       title,
       description,
       category,
-      startDate: startDate,
-      endDate: endDate,
+      startDate,
+      endDate,
       keyResults: keyResults as KeyResult[]
     });
     onClose();
   };
 
   const addKeyResult = () => {
-    setKeyResults([...keyResults, { description: '', targetValue: 0, currentValue: 0, unit: '' }]);
+    setKeyResults([...keyResults, {
+      description: '',
+      targetValue: 0,
+      currentValue: 0,
+      unit: '',
+      startDate,
+      endDate
+    }]);
   };
 
   const updateKeyResult = (index: number, field: keyof KeyResult, value: string | number) => {
@@ -73,8 +88,7 @@ export const OKRModal: React.FC<OKRModalProps> = ({
 
   const removeKeyResult = (index: number) => {
     if (keyResults.length > 1) {
-      const updatedKRs = keyResults.filter((_, i) => i !== index);
-      setKeyResults(updatedKRs);
+      setKeyResults(keyResults.filter((_, i) => i !== index));
     }
   };
 

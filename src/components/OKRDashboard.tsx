@@ -32,7 +32,8 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
   const [newCategoryInput, setNewCategoryInput] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedObjective, setSelectedObjective] = useState<Objective | undefined>();
+  const [selectedObjective, setSelectedObjective] = useState<Objective | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Fetch objectives and categories when user changes
   useEffect(() => {
@@ -295,15 +296,25 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
     }
   };
 
-  const handleEditObjective = (objectiveId: string) => {
+  const handleObjectiveClick = (objectiveId: string) => {
     const objective = objectives.find(obj => obj.id === objectiveId);
-    setSelectedObjective(objective);
+    if (objective) {
+      setSelectedObjective(objective);
+      setIsModalOpen(true);
+    }
+  };
+
+  const handleAddNewObjective = () => {
+    setSelectedObjective(null);
     setIsModalOpen(true);
   };
 
-  const handleCreateObjective = () => {
-    setSelectedObjective(undefined);
-    setIsModalOpen(true);
+  const handleEditObjective = (objectiveId: string) => {
+    const objective = objectives.find(obj => obj.id === objectiveId);
+    if (objective) {
+      setSelectedObjective(objective);
+      setIsModalOpen(true);
+    }
   };
 
   const handleSaveObjective = async (objectiveData: {
@@ -685,7 +696,7 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
               </button>
             </div>
             <button
-              onClick={handleCreateObjective}
+              onClick={handleAddNewObjective}
               className={`px-4 py-2 rounded-lg font-medium ${
                 isDarkMode
                   ? 'bg-blue-600 text-white hover:bg-blue-700'
@@ -900,14 +911,14 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
             {viewMode === 'timeline' && (
               <TimelineView
                 objectives={filteredObjectives}
-                onEditObjective={handleEditObjective}
+                onObjectiveClick={handleEditObjective}
                 isDarkMode={isDarkMode}
               />
             )}
             {viewMode === 'calendar' && (
               <CalendarView
                 objectives={filteredObjectives}
-                onEditObjective={handleEditObjective}
+                onObjectiveClick={handleEditObjective}
                 isDarkMode={isDarkMode}
               />
             )}
@@ -918,7 +929,10 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
       {/* Existing modals and forms */}
       <OKRModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedObjective(null);
+        }}
         onSave={handleSaveObjective}
         objective={selectedObjective}
         isDarkMode={isDarkMode}
