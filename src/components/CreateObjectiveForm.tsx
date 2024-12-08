@@ -100,7 +100,6 @@ export const CreateObjectiveForm: React.FC<CreateObjectiveFormProps> = ({
   const handleKeyResultStartDateChange = (index: number, date: Date | null) => {
     if (date) {
       const newDate = date < startDate ? startDate : date;
-      const kr = keyResults[index];
       setKeyResults(keyResults.map((kr, i) =>
         i === index
           ? {
