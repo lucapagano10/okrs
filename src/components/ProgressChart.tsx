@@ -57,18 +57,6 @@ export const ProgressChart: React.FC<ProgressChartProps> = ({
           cy={size / 2}
         />
       </svg>
-      <div className="absolute flex flex-col items-center justify-center">
-        <span className={`text-2xl font-bold ${
-          isDarkMode ? 'text-white' : 'text-gray-900'
-        }`}>
-          {Math.round(progress)}%
-        </span>
-        <span className={`text-sm ${
-          isDarkMode ? 'text-gray-400' : 'text-gray-500'
-        }`}>
-          Complete
-        </span>
-      </div>
     </div>
   );
 };

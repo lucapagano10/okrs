@@ -42,10 +42,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   };
 
   const getBackgroundColor = (progress: number) => {
-    if (progress >= 80) return isDarkMode ? 'bg-green-950/50' : 'bg-green-50';
-    if (progress >= 50) return isDarkMode ? 'bg-blue-950/50' : 'bg-blue-50';
-    if (progress >= 20) return isDarkMode ? 'bg-yellow-950/50' : 'bg-yellow-50';
-    return isDarkMode ? 'bg-red-950/50' : 'bg-red-50';
+    if (progress >= 80) return isDarkMode ? 'bg-green-500/10' : 'bg-green-50';
+    if (progress >= 50) return isDarkMode ? 'bg-blue-500/10' : 'bg-blue-50';
+    if (progress >= 20) return isDarkMode ? 'bg-yellow-500/10' : 'bg-yellow-50';
+    return isDarkMode ? 'bg-red-500/10' : 'bg-red-50';
   };
 
   const changeMonth = (offset: number) => {
@@ -62,7 +62,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   };
 
   return (
-    <div className={`p-6 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg`}>
+    <div className={`p-6 rounded-xl ${isDarkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg`}>
       {/* Calendar Header */}
       <div className="flex items-center justify-between mb-8">
         <h3 className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
@@ -77,7 +77,9 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 : 'hover:bg-gray-100 text-gray-600'
             }`}
           >
-            ←
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
           </button>
           <span className={`text-lg font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
             {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
@@ -90,15 +92,17 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 : 'hover:bg-gray-100 text-gray-600'
             }`}
           >
-            →
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
           </button>
         </div>
       </div>
 
       {/* Calendar Container */}
-      <div className={`rounded-lg p-6 ${isDarkMode ? 'bg-gray-900/50' : 'bg-gray-50'}`}>
+      <div className={`rounded-xl p-6 ${isDarkMode ? 'bg-gray-900/50' : 'bg-gray-50'}`}>
         {/* Calendar Grid */}
-        <div className={`grid grid-cols-7 gap-[1px] rounded-lg overflow-hidden ${
+        <div className={`grid grid-cols-7 gap-[1px] rounded-xl overflow-hidden ${
           isDarkMode ? 'bg-gray-700' : 'bg-gray-200'
         }`}>
           {/* Weekday Headers */}
@@ -123,31 +127,32 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 key={index}
                 className={`min-h-[140px] relative group ${
                   isDarkMode ? 'bg-gray-800' : 'bg-white'
-                } ${day ? 'hover:bg-opacity-50' : ''}`}
+                } ${day ? 'hover:bg-opacity-95 transition-colors duration-200' : ''}`}
               >
                 {day && (
                   <div className="h-full p-2">
-                    <div className={`flex justify-center mb-2`}>
-                      <div className={`w-8 h-8 flex items-center justify-center rounded-full ${
-                        isToday(day)
+                    <div className={`flex justify-end mb-2`}>
+                      <div className={`w-7 h-7 flex items-center justify-center rounded-full
+                        ${isToday(day)
                           ? isDarkMode
-                            ? 'bg-blue-500 text-white'
-                            : 'bg-blue-600 text-white'
+                            ? 'bg-blue-500 text-white font-medium'
+                            : 'bg-blue-600 text-white font-medium'
                           : isDarkMode
                           ? 'text-gray-400'
                           : 'text-gray-600'
-                      }`}>
+                        } ${hasObjectives ? 'ring-2 ring-offset-2 ring-offset-white ring-blue-500/20' : ''}`}
+                      >
                         {day}
                       </div>
                     </div>
-                    <div className="space-y-1.5">
+                    <div className="space-y-1">
                       {objectives.slice(0, 3).map((obj) => (
                         <div
                           key={obj.id}
                           onClick={() => onObjectiveClick(obj.id)}
-                          className={`p-1.5 rounded text-xs cursor-pointer transition-colors ${
-                            getBackgroundColor(obj.progress)
-                          } hover:brightness-110`}
+                          className={`p-1.5 rounded-lg text-xs cursor-pointer transition-all duration-200
+                            ${getBackgroundColor(obj.progress)}
+                            hover:translate-y-[-1px] hover:shadow-sm`}
                         >
                           <div className="flex items-center gap-1.5">
                             <div className="w-3 h-3 flex-shrink-0">
@@ -169,8 +174,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                         </div>
                       ))}
                       {objectives.length > 3 && (
-                        <div className={`text-xs px-1.5 ${
-                          isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                        <div className={`text-xs px-1.5 font-medium ${
+                          isDarkMode ? 'text-blue-400' : 'text-blue-600'
                         }`}>
                           +{objectives.length - 3} more
                         </div>
@@ -207,11 +212,6 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                               </div>
                             </div>
                           ))}
-                          <div className={`text-xs ${
-                            isDarkMode ? 'text-blue-300' : 'text-blue-600'
-                          }`}>
-                            Click any objective to edit
-                          </div>
                         </div>
                       </div>
                     )}
