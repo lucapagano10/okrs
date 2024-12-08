@@ -26,9 +26,22 @@ const timePeriodOptions: { value: TimePeriod; label: string; description: string
   },
 ];
 
+const LOCAL_STORAGE_KEYS = {
+  OBJECTIVES: 'okrs_objectives',
+  CATEGORIES: 'okrs_categories'
+};
+
 export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }) => {
-  const [objectives, setObjectives] = useState<Objective[]>([]);
-  const [categories, setCategories] = useState<string[]>(['Personal', 'Professional', 'Health', 'Financial']);
+  const [objectives, setObjectives] = useState<Objective[]>(() => {
+    const saved = localStorage.getItem(LOCAL_STORAGE_KEYS.OBJECTIVES);
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [categories, setCategories] = useState<string[]>(() => {
+    const saved = localStorage.getItem(LOCAL_STORAGE_KEYS.CATEGORIES);
+    return saved ? JSON.parse(saved) : ['Personal', 'Professional', 'Health', 'Learning'];
+  });
+
   const [showForm, setShowForm] = useState(false);
   const [editingObjective, setEditingObjective] = useState<Objective | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -37,22 +50,12 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
   const [selectedTimePeriod, setSelectedTimePeriod] = useState<TimePeriod>('current-quarter');
 
   useEffect(() => {
-    const savedObjectives = localStorage.getItem('objectives');
-    const savedCategories = localStorage.getItem('categories');
-
-    if (savedObjectives) {
-      setObjectives(JSON.parse(savedObjectives));
-    }
-
-    if (savedCategories) {
-      setCategories(JSON.parse(savedCategories));
-    }
-  }, []);
+    localStorage.setItem(LOCAL_STORAGE_KEYS.OBJECTIVES, JSON.stringify(objectives));
+  }, [objectives]);
 
   useEffect(() => {
-    localStorage.setItem('objectives', JSON.stringify(objectives));
-    localStorage.setItem('categories', JSON.stringify(categories));
-  }, [objectives, categories]);
+    localStorage.setItem(LOCAL_STORAGE_KEYS.CATEGORIES, JSON.stringify(categories));
+  }, [categories]);
 
   const handleAddObjective = (objective: Omit<Objective, 'id' | 'progress'>) => {
     const newObjective: Objective = {
