@@ -258,31 +258,31 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
     setShowDeleteModal(true);
   };
 
-  const confirmDeleteCategory = async () => {
-    if (categoryToDelete && user) {
-      try {
-        // Delete all objectives in this category
-        await supabase
-          .from('objectives')
-          .delete()
-          .eq('category', categoryToDelete)
-          .eq('user_id', user.id);
+  const confirmDeleteCategory = async (category: string) => {
+    if (!user) return;
+    try {
+      // Delete all objectives in this category
+      await supabase
+        .from('objectives')
+        .delete()
+        .eq('category', category)
+        .eq('user_id', user.id);
 
-        // Delete the category
-        await supabase
-          .from('user_categories')
-          .delete()
-          .eq('name', categoryToDelete)
-          .eq('user_id', user.id);
+      // Delete the category
+      await supabase
+        .from('user_categories')
+        .delete()
+        .eq('name', category)
+        .eq('user_id', user.id);
 
-        await fetchObjectives();
-        await fetchCategories();
-      } catch (error) {
-        console.error('Error deleting category:', error);
-      }
+      await fetchCategories();
+      await fetchObjectives();
+      setShowDeleteModal(false);
+      showNotification('Category deleted successfully');
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      showNotification('Failed to delete category', 'error');
     }
-    setShowDeleteModal(false);
-    setCategoryToDelete(null);
   };
 
   const handleEditObjective = (objectiveId: string) => {
@@ -401,10 +401,10 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
       {/* Existing modals and forms */}
       {isFormOpen && (
         <CreateObjectiveForm
-          onClose={() => setIsFormOpen(false)}
+          onCancel={() => setIsFormOpen(false)}
           onSubmit={handleAddObjective}
           categories={categories}
-          editingObjective={editingObjective}
+          initialObjective={editingObjective}
           isDarkMode={isDarkMode}
         />
       )}
@@ -414,7 +414,7 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
         onClose={() => setShowDeleteModal(false)}
         onConfirm={() => {
           if (categoryToDelete) {
-            handleConfirmDeleteCategory(categoryToDelete);
+            confirmDeleteCategory(categoryToDelete);
             setCategoryToDelete(null);
           }
         }}
