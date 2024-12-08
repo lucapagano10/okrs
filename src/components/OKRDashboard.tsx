@@ -293,7 +293,7 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
     }
   };
 
-  const timeGroups = groupObjectivesByTime(filteredObjectives);
+  const groupedObjectives = groupObjectivesByTime(filteredObjectives);
 
   const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
     setToastMessage(message);
@@ -301,8 +301,6 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
     setShowToast(true);
     setTimeout(() => setShowToast(false), 3000);
   };
-
-  const groupedObjectives = groupObjectivesByTime(filteredObjectives);
 
   return (
     <div className={`min-h-screen p-6 ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'}`}>
