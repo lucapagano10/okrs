@@ -22,15 +22,15 @@ export const TimeGroupView: React.FC<TimeGroupViewProps> = ({
     switch (status) {
       case 'current':
         return isDarkMode
-          ? 'bg-green-500/10 text-green-400 ring-1 ring-green-500/20'
+          ? 'bg-green-500/5 text-green-400 ring-1 ring-green-500/10'
           : 'bg-green-50 text-green-700 ring-1 ring-green-600/20';
       case 'future':
         return isDarkMode
-          ? 'bg-blue-500/10 text-blue-400 ring-1 ring-blue-500/20'
+          ? 'bg-blue-500/5 text-blue-400 ring-1 ring-blue-500/10'
           : 'bg-blue-50 text-blue-700 ring-1 ring-blue-600/20';
       case 'past':
         return isDarkMode
-          ? 'bg-gray-500/10 text-gray-400 ring-1 ring-gray-500/20'
+          ? 'bg-gray-500/5 text-gray-400 ring-1 ring-gray-500/10'
           : 'bg-gray-100 text-gray-600 ring-1 ring-gray-500/20';
     }
   };
@@ -43,7 +43,7 @@ export const TimeGroupView: React.FC<TimeGroupViewProps> = ({
   };
 
   return (
-    <div className={`mb-8 ${isDarkMode ? 'bg-gray-900/30' : 'bg-white'} rounded-2xl overflow-hidden`}>
+    <div className={`mb-8 ${isDarkMode ? 'bg-gray-900' : 'bg-white'} rounded-2xl overflow-hidden`}>
       <div className="px-6 py-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -75,7 +75,7 @@ export const TimeGroupView: React.FC<TimeGroupViewProps> = ({
         </div>
       </div>
 
-      <div className="px-4 pb-4">
+      <div className={`px-4 pb-4 ${isDarkMode ? 'bg-gray-900/30' : 'bg-white'}`}>
         <div className="grid grid-cols-1 gap-3">
           {group.objectives.map(objective => (
             <ObjectiveCard
