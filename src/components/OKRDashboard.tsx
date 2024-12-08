@@ -22,6 +22,7 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
   const [timeFilter, setTimeFilter] = useState<'all' | 'current' | 'past' | 'future'>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showToast, setShowToast] = useState(false);
@@ -36,7 +37,7 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
     }
   }, [user]);
 
-  // Filter objectives based on search query and time filter
+  // Filter objectives based on search query, time filter, and category filter
   useEffect(() => {
     let filtered = objectives;
 
@@ -49,6 +50,11 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
         obj.category.toLowerCase().includes(query) ||
         obj.keyResults.some(kr => kr.description.toLowerCase().includes(query))
       );
+    }
+
+    // Apply category filter
+    if (categoryFilter !== 'all') {
+      filtered = filtered.filter(obj => obj.category === categoryFilter);
     }
 
     // Apply time filter
@@ -72,7 +78,7 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
     }
 
     setFilteredObjectives(filtered);
-  }, [timeFilter, objectives, searchQuery]);
+  }, [timeFilter, categoryFilter, objectives, searchQuery]);
 
   const fetchObjectives = async () => {
     if (!user?.id) return;
@@ -295,6 +301,12 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
 
   const groupedObjectives = groupObjectivesByTime(filteredObjectives);
 
+  // Get category counts
+  const categoryCounts = objectives.reduce((acc, obj) => {
+    acc[obj.category] = (acc[obj.category] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
   const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
     setToastMessage(message);
     setToastType(type);
@@ -330,33 +342,70 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
           </button>
         </div>
 
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="w-full sm:w-64">
-            <input
-              type="text"
-              placeholder="Search objectives..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className={`w-full px-4 py-2 rounded-lg ${
-                isDarkMode
-                  ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-400'
-                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-              }`}
+        <div className="flex flex-col gap-4">
+          {/* Search and Time Filter */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="w-full sm:w-64">
+              <input
+                type="text"
+                placeholder="Search objectives..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className={`w-full px-4 py-2 rounded-lg ${
+                  isDarkMode
+                    ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-400'
+                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                }`}
+              />
+            </div>
+            <TimeFilter
+              selectedFilter={timeFilter}
+              onFilterChange={setTimeFilter}
+              isDarkMode={isDarkMode}
             />
           </div>
-          <TimeFilter
-            selectedFilter={timeFilter}
-            onFilterChange={setTimeFilter}
-            isDarkMode={isDarkMode}
-          />
-        </div>
 
-        <CategoryManager
-          categories={categories}
-          onAddCategory={handleAddCategory}
-          onDeleteCategory={handleDeleteCategory}
-          isDarkMode={isDarkMode}
-        />
+          {/* Category Filter Labels */}
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setCategoryFilter('all')}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                categoryFilter === 'all'
+                  ? isDarkMode
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-blue-600 text-white'
+                  : isDarkMode
+                  ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              All Categories
+              <span className="ml-2 px-2 py-0.5 rounded-full text-xs bg-opacity-20 bg-current">
+                {objectives.length}
+              </span>
+            </button>
+            {categories.map(category => (
+              <button
+                key={category}
+                onClick={() => setCategoryFilter(category)}
+                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                  categoryFilter === category
+                    ? isDarkMode
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-blue-600 text-white'
+                    : isDarkMode
+                    ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                {category.charAt(0).toUpperCase() + category.slice(1)}
+                <span className="ml-2 px-2 py-0.5 rounded-full text-xs bg-opacity-20 bg-current">
+                  {categoryCounts[category] || 0}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
 
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
@@ -366,7 +415,7 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
           <div className={`text-center py-12 rounded-lg ${
             isDarkMode ? 'bg-gray-800' : 'bg-white'
           }`}>
-            {searchQuery ? (
+            {searchQuery || categoryFilter !== 'all' ? (
               <>
                 <h3 className="text-xl font-medium mb-2">No matching objectives found</h3>
                 <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
