@@ -506,6 +506,7 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
       {/* Modals */}
       {isCreatingObjective && (
         <CreateObjectiveForm
+          isOpen={isCreatingObjective}
           onSubmit={handleCreateObjective}
           onCancel={() => setIsCreatingObjective(false)}
           availableCategories={categories}
