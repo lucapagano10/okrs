@@ -7,6 +7,8 @@ import { CategoryFilter } from './CategoryFilter';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { OKRModal } from './OKRModal';
+import { CreateObjectiveForm } from './CreateObjectiveForm';
+import { CategoryManager } from './CategoryManager';
 
 type ViewMode = 'list' | 'timeline' | 'calendar';
 
@@ -24,9 +26,10 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [viewMode, setViewMode] = useState<ViewMode>('list');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedObjective, setSelectedObjective] = useState<Objective | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isManagingCategories, setIsManagingCategories] = useState(false);
+  const [isCreatingObjective, setIsCreatingObjective] = useState(false);
+  const [editingObjective, setEditingObjective] = useState<Objective | null>(null);
 
   // Fetch objectives and categories when user changes
   useEffect(() => {
@@ -157,21 +160,19 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
   const handleEditObjective = (objectiveId: string) => {
     const objective = objectives.find(obj => obj.id === objectiveId);
     if (objective) {
-      setSelectedObjective(objective);
-      setIsModalOpen(true);
+      setEditingObjective(objective);
     }
   };
 
   const handleAddNewObjective = () => {
-    setSelectedObjective(null);
-    setIsModalOpen(true);
+    setIsCreatingObjective(true);
   };
 
   const handleSaveObjective = async (objectiveData: Partial<Objective>) => {
     if (!user?.id) return;
 
     try {
-      if (selectedObjective) {
+      if (editingObjective) {
         // Update existing objective
         const { error: objError } = await supabase
           .from('objectives')
@@ -183,7 +184,7 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
             end_date: objectiveData.endDate || new Date().toISOString(),
             status: 'not-started' as const
           })
-          .eq('id', selectedObjective.id);
+          .eq('id', editingObjective.id);
 
         if (objError) throw objError;
 
@@ -214,7 +215,7 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
                 target_value: kr.targetValue || 0,
                 current_value: kr.currentValue || 0,
                 unit: kr.unit || '',
-                objective_id: selectedObjective.id,
+                objective_id: editingObjective.id,
                 start_date: kr.startDate || new Date().toISOString(),
                 end_date: kr.endDate || new Date().toISOString(),
                 status: 'not-started' as const,
@@ -264,7 +265,7 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
       }
 
       fetchObjectives();
-      setIsModalOpen(false);
+      setEditingObjective(null);
       showNotification('Objective saved successfully');
     } catch (error) {
       console.error('Error saving objective:', error);
@@ -354,6 +355,66 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
     setTimeout(() => setShowToast(false), 3000);
   };
 
+  const handleCreateObjective = async (objective: Omit<Objective, 'id' | 'progress' | 'user_id' | 'status'>) => {
+    try {
+      setIsLoading(true);
+
+      // Transform the data to match database schema
+      const objectiveData = {
+        title: objective.title,
+        description: objective.description,
+        category: objective.category,
+        start_date: objective.startDate,
+        end_date: objective.endDate,
+        progress: 0,
+        user_id: user?.id || '',
+        status: 'not-started' as const
+      };
+
+      const { data, error } = await supabase
+        .from('objectives')
+        .insert([objectiveData])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Handle key results separately if needed
+      if (data) {
+        const keyResultsData = objective.keyResults.map(kr => ({
+          description: kr.description,
+          target_value: kr.targetValue,
+          current_value: kr.currentValue,
+          unit: kr.unit,
+          start_date: kr.startDate,
+          end_date: kr.endDate,
+          progress: 0,
+          objective_id: data.id,
+          status: 'not-started' as const
+        }));
+
+        const { error: krError } = await supabase
+          .from('key_results')
+          .insert(keyResultsData);
+
+        if (krError) throw krError;
+      }
+
+      setToastMessage('Objective created successfully');
+      setToastType('success');
+      setShowToast(true);
+      setIsCreatingObjective(false);
+      await fetchObjectives();
+    } catch (error) {
+      console.error('Error creating objective:', error);
+      setToastMessage('Failed to create objective');
+      setToastType('error');
+      setShowToast(true);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className={`min-h-screen ${isDarkMode ? 'bg-gray-950' : 'bg-gray-50'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -406,7 +467,9 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
                 <CategoryFilter
                   categories={categories}
                   selectedCategory={selectedCategory}
-                  onSelectCategory={setSelectedCategory}
+                  onCategorySelect={setSelectedCategory}
+                  onAddCategory={handleAddCategory}
+                  onDeleteCategory={handleDeleteCategory}
                   isDarkMode={isDarkMode}
                 />
               </div>
@@ -464,14 +527,34 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
       </div>
 
       {/* Modals */}
-      <OKRModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSave={handleSaveObjective}
-        objective={selectedObjective}
-        categories={categories}
-        isDarkMode={isDarkMode}
-      />
+      {isCreatingObjective && (
+        <CreateObjectiveForm
+          onSubmit={handleCreateObjective}
+          onCancel={() => setIsCreatingObjective(false)}
+          availableCategories={categories}
+          isDarkMode={isDarkMode}
+        />
+      )}
+
+      {isManagingCategories && (
+        <CategoryManager
+          categories={categories}
+          onAddCategory={handleAddCategory}
+          onDeleteCategory={handleDeleteCategory}
+          isDarkMode={isDarkMode}
+        />
+      )}
+
+      {editingObjective && (
+        <OKRModal
+          isOpen={!!editingObjective}
+          onClose={() => setEditingObjective(null)}
+          objective={editingObjective}
+          onSave={handleSaveObjective}
+          categories={categories}
+          isDarkMode={isDarkMode}
+        />
+      )}
 
       {/* Toast */}
       {showToast && (
