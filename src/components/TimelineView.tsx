@@ -32,10 +32,10 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
   );
 
   const getProgressColor = (progress: number) => {
-    if (progress >= 80) return isDarkMode ? 'bg-green-500' : 'bg-green-600';
-    if (progress >= 50) return isDarkMode ? 'bg-blue-500' : 'bg-blue-600';
-    if (progress >= 20) return isDarkMode ? 'bg-yellow-500' : 'bg-yellow-600';
-    return isDarkMode ? 'bg-red-500' : 'bg-red-600';
+    if (progress >= 80) return isDarkMode ? 'bg-green-500/30' : 'bg-green-100';
+    if (progress >= 50) return isDarkMode ? 'bg-blue-500/30' : 'bg-blue-100';
+    if (progress >= 20) return isDarkMode ? 'bg-yellow-500/30' : 'bg-yellow-100';
+    return isDarkMode ? 'bg-red-500/30' : 'bg-red-100';
   };
 
   const getStatusColor = (progress: number) => {
@@ -79,12 +79,12 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
   };
 
   return (
-    <div className={`p-6 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
-      <div className="flex items-center justify-between mb-6">
-        <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+    <div className={`p-6 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg`}>
+      <div className="flex items-center justify-between mb-8">
+        <h3 className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
           Timeline View
         </h3>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
           <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Zoom:</span>
           <div className={`flex rounded-lg overflow-hidden border ${
             isDarkMode ? 'border-gray-700' : 'border-gray-200'
@@ -93,7 +93,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
               <button
                 key={level}
                 onClick={() => setZoomLevel(level)}
-                className={`px-3 py-1 text-sm font-medium capitalize transition-colors ${
+                className={`px-4 py-1.5 text-sm font-medium capitalize transition-colors ${
                   zoomLevel === level
                     ? isDarkMode
                       ? 'bg-gray-700 text-white'
@@ -111,29 +111,29 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
       </div>
 
       {/* Timeline Header */}
-      <div className="flex justify-between mb-2">
-        <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-          {formatDate(earliestDate)}
+      <div className="flex justify-between mb-4">
+        <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+          {formatDate(new Date(earliestDate))}
         </span>
-        <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-          {formatDate(latestDate)}
+        <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+          {formatDate(new Date(latestDate))}
         </span>
       </div>
 
       {/* Timeline */}
       <div className="relative">
         {/* Timeline Base Line */}
-        <div className={`absolute top-4 left-0 right-0 h-0.5 ${
+        <div className={`absolute top-6 left-0 right-0 h-0.5 ${
           isDarkMode ? 'bg-gray-700' : 'bg-gray-200'
         }`} />
 
         {/* Today Marker */}
         <div
-          className={`absolute top-0 h-8 w-0.5 ${isDarkMode ? 'bg-blue-500' : 'bg-blue-600'}`}
+          className={`absolute top-0 h-12 w-0.5 ${isDarkMode ? 'bg-blue-500' : 'bg-blue-600'}`}
           style={{
             left: `${((new Date().getTime() - new Date(earliestDate).getTime()) /
               (new Date(latestDate).getTime() - new Date(earliestDate).getTime())) * 100}%`,
-            zIndex: 10
+            zIndex: 20
           }}
         >
           <div className={`absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-medium ${
@@ -144,7 +144,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
         </div>
 
         {/* Objectives */}
-        <div className="space-y-6 pt-8">
+        <div className="space-y-4 pt-12">
           {sortedObjectives.map((objective) => {
             const { left, width, widthValue } = getPositionAndWidth(objective.startDate, objective.endDate);
             const daysRemaining = getDaysRemaining(objective.endDate);
@@ -158,14 +158,17 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
               >
                 {/* Objective Bar */}
                 <div
-                  className={`absolute h-12 rounded-lg cursor-pointer transition-all ${
+                  className={`absolute h-14 rounded-lg cursor-pointer transition-all shadow-sm ${
                     isDarkMode ? 'hover:ring-2 ring-gray-600' : 'hover:ring-2 ring-gray-200'
                   }`}
                   style={{ left, width }}
                 >
+                  {/* Background */}
+                  <div className={`absolute inset-0 rounded-lg ${getProgressColor(objective.progress)}`} />
+
                   {/* Progress Bar */}
                   <div
-                    className={`h-full rounded-lg ${getProgressColor(objective.progress)} transition-all`}
+                    className={`absolute inset-0 rounded-lg bg-current opacity-20 transition-all`}
                     style={{ width: `${objective.progress}%` }}
                   />
 
@@ -182,7 +185,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                           isDarkMode={isDarkMode}
                         />
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <div className="font-medium truncate">
                           {objective.title}
                         </div>
@@ -192,7 +195,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                       </div>
                     </div>
                     {widthValue > 15 && (
-                      <div className={`text-sm ${getStatusColor(objective.progress)}`}>
+                      <div className={`text-sm whitespace-nowrap ${getStatusColor(objective.progress)}`}>
                         {isOverdue ? (
                           <span className={isDarkMode ? 'text-red-400' : 'text-red-600'}>
                             {Math.abs(daysRemaining)}d overdue
@@ -207,10 +210,10 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                   {/* Tooltip */}
                   <div className={`absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2
                     px-4 py-2 rounded-lg text-sm opacity-0 group-hover:opacity-100 transition-opacity
-                    pointer-events-none z-20 ${
+                    pointer-events-none z-30 shadow-lg ${
                       isDarkMode
                         ? 'bg-gray-700 text-white'
-                        : 'bg-white text-gray-900 shadow-lg'
+                        : 'bg-white text-gray-900'
                     }`}
                   >
                     <div className="font-medium">{objective.title}</div>
@@ -220,7 +223,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                     <div className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>
                       Progress: {objective.progress}%
                     </div>
-                    <div className="mt-1 space-y-1">
+                    <div className="mt-2 space-y-1">
                       {objective.keyResults.map((kr, index) => (
                         <div key={kr.id} className={`text-xs ${
                           isDarkMode ? 'text-gray-400' : 'text-gray-500'

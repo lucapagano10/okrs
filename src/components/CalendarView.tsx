@@ -62,10 +62,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   };
 
   return (
-    <div className={`p-6 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+    <div className={`p-6 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg`}>
       {/* Calendar Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+      <div className="flex items-center justify-between mb-8">
+        <h3 className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
           Calendar View
         </h3>
         <div className="flex items-center gap-4">
@@ -96,12 +96,14 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       </div>
 
       {/* Calendar Grid */}
-      <div className="grid grid-cols-7 gap-px bg-gray-200 rounded-lg overflow-hidden">
+      <div className={`grid grid-cols-7 gap-[1px] rounded-lg overflow-hidden ${
+        isDarkMode ? 'bg-gray-700' : 'bg-gray-200'
+      }`}>
         {/* Weekday Headers */}
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
           <div
             key={day}
-            className={`p-2 text-center text-sm font-medium ${
+            className={`p-3 text-center text-sm font-medium ${
               isDarkMode ? 'bg-gray-800 text-gray-400' : 'bg-white text-gray-600'
             }`}
           >
@@ -117,37 +119,31 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           return (
             <div
               key={index}
-              className={`min-h-[120px] p-2 ${
+              className={`min-h-[140px] relative group ${
                 isDarkMode ? 'bg-gray-800' : 'bg-white'
-              } relative group`}
+              }`}
             >
               {day && (
-                <>
-                  <div
-                    className={`flex items-center justify-center w-8 h-8 mb-1 rounded-full ${
-                      isToday(day)
-                        ? isDarkMode
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-blue-600 text-white'
-                        : isDarkMode
-                        ? 'text-gray-400'
-                        : 'text-gray-600'
-                    }`}
-                  >
+                <div className="h-full p-2">
+                  <div className={`flex justify-center mb-2 ${
+                    isToday(day)
+                      ? 'bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center mx-auto'
+                      : isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                  }`}>
                     {day}
                   </div>
-                  <div className="space-y-1">
+                  <div className="space-y-1.5">
                     {objectives.slice(0, 3).map((obj) => (
                       <div
                         key={obj.id}
                         onClick={() => onEditObjective(obj.id)}
-                        className={`p-1 rounded text-xs cursor-pointer transition-colors ${
+                        className={`p-1.5 rounded text-xs cursor-pointer transition-colors ${
                           getProgressColor(obj.progress)
                         } ${
                           isDarkMode ? 'text-gray-200' : 'text-gray-700'
                         } hover:brightness-110`}
                       >
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1.5">
                           <div className="w-3 h-3 flex-shrink-0">
                             <ProgressChart
                               progress={obj.progress}
@@ -156,12 +152,14 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                               isDarkMode={isDarkMode}
                             />
                           </div>
-                          <span className="truncate">{obj.title}</span>
+                          <span className="truncate flex-1 font-medium">
+                            {obj.title}
+                          </span>
                         </div>
                       </div>
                     ))}
                     {objectives.length > 3 && (
-                      <div className={`text-xs ${
+                      <div className={`text-xs px-1.5 ${
                         isDarkMode ? 'text-gray-400' : 'text-gray-600'
                       }`}>
                         +{objectives.length - 3} more
@@ -171,7 +169,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
                   {/* Hover Tooltip */}
                   {hasObjectives && objectives.length > 3 && (
-                    <div className={`absolute left-0 top-full mt-2 w-64 p-3 rounded-lg shadow-lg
+                    <div className={`absolute left-1/2 top-full mt-2 -translate-x-1/2 w-64 p-3 rounded-lg shadow-lg
                       opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none
                       ${isDarkMode ? 'bg-gray-700' : 'bg-white'}`}
                     >
@@ -202,7 +200,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                       </div>
                     </div>
                   )}
-                </>
+                </div>
               )}
             </div>
           );
