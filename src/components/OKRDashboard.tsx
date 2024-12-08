@@ -3,9 +3,13 @@ import { Objective, groupObjectivesByTime, ObjectiveStatus, KeyResultStatus } fr
 import { CreateObjectiveForm } from './CreateObjectiveForm';
 import { TimeGroupView } from './TimeGroupView';
 import { TimeFilter } from './TimeFilter';
+import { TimelineView } from './TimelineView';
+import { CalendarView } from './CalendarView';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { ConfirmationModal } from './ConfirmationModal';
+
+type ViewMode = 'list' | 'timeline' | 'calendar';
 
 interface OKRDashboardProps {
   isDarkMode?: boolean;
@@ -29,6 +33,7 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [newCategoryInput, setNewCategoryInput] = useState('');
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
 
   // Fetch objectives and categories when user changes
   useEffect(() => {
@@ -349,22 +354,71 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
       )}
 
       <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header with View Toggle */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <h1 className="text-3xl font-bold">My OKRs</h1>
-          <button
-            onClick={() => setIsFormOpen(true)}
-            className={`px-4 py-2 rounded-lg font-medium ${
-              isDarkMode
-                ? 'bg-blue-600 text-white hover:bg-blue-700'
-                : 'bg-blue-600 text-white hover:bg-blue-700'
-            }`}
-          >
-            Add New Objective
-          </button>
+          <div className="flex items-center gap-4">
+            <div className="flex rounded-lg overflow-hidden border ${
+              isDarkMode ? 'border-gray-700' : 'border-gray-200'
+            }">
+              <button
+                onClick={() => setViewMode('list')}
+                className={`px-4 py-2 text-sm font-medium transition-colors ${
+                  viewMode === 'list'
+                    ? isDarkMode
+                      ? 'bg-gray-800 text-white'
+                      : 'bg-white text-gray-900'
+                    : isDarkMode
+                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                List
+              </button>
+              <button
+                onClick={() => setViewMode('timeline')}
+                className={`px-4 py-2 text-sm font-medium transition-colors ${
+                  viewMode === 'timeline'
+                    ? isDarkMode
+                      ? 'bg-gray-800 text-white'
+                      : 'bg-white text-gray-900'
+                    : isDarkMode
+                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                Timeline
+              </button>
+              <button
+                onClick={() => setViewMode('calendar')}
+                className={`px-4 py-2 text-sm font-medium transition-colors ${
+                  viewMode === 'calendar'
+                    ? isDarkMode
+                      ? 'bg-gray-800 text-white'
+                      : 'bg-white text-gray-900'
+                    : isDarkMode
+                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                Calendar
+              </button>
+            </div>
+            <button
+              onClick={() => setIsFormOpen(true)}
+              className={`px-4 py-2 rounded-lg font-medium ${
+                isDarkMode
+                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}
+            >
+              Add New Objective
+            </button>
+          </div>
         </div>
 
+        {/* Search and Filters */}
         <div className="flex flex-col gap-4">
-          {/* Search and Time Filter */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="w-full sm:w-64">
               <input
@@ -379,11 +433,13 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
                 }`}
               />
             </div>
-            <TimeFilter
-              selectedFilter={timeFilter}
-              onFilterChange={setTimeFilter}
-              isDarkMode={isDarkMode}
-            />
+            {viewMode === 'list' && (
+              <TimeFilter
+                selectedFilter={timeFilter}
+                onFilterChange={setTimeFilter}
+                isDarkMode={isDarkMode}
+              />
+            )}
           </div>
 
           {/* Category Labels */}
@@ -522,11 +578,12 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
           </div>
         </div>
 
+        {/* Content */}
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-4 border-current border-t-transparent"></div>
           </div>
-        ) : groupedObjectives.length === 0 ? (
+        ) : filteredObjectives.length === 0 ? (
           <div className={`text-center py-12 rounded-lg ${
             isDarkMode ? 'bg-gray-800' : 'bg-white'
           }`}>
@@ -547,16 +604,34 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
             )}
           </div>
         ) : (
-          groupedObjectives.map((group) => (
-            <TimeGroupView
-              key={`${group.startDate.toISOString()}-${group.endDate.toISOString()}`}
-              group={group}
-              onEdit={handleEditObjective}
-              onDelete={handleDeleteObjective}
-              onUpdateProgress={handleUpdateProgress}
-              isDarkMode={isDarkMode}
-            />
-          ))
+          <>
+            {viewMode === 'list' && (
+              groupedObjectives.map((group) => (
+                <TimeGroupView
+                  key={`${group.startDate.toISOString()}-${group.endDate.toISOString()}`}
+                  group={group}
+                  onEdit={handleEditObjective}
+                  onDelete={handleDeleteObjective}
+                  onUpdateProgress={handleUpdateProgress}
+                  isDarkMode={isDarkMode}
+                />
+              ))
+            )}
+            {viewMode === 'timeline' && (
+              <TimelineView
+                objectives={filteredObjectives}
+                onEditObjective={handleEditObjective}
+                isDarkMode={isDarkMode}
+              />
+            )}
+            {viewMode === 'calendar' && (
+              <CalendarView
+                objectives={filteredObjectives}
+                onEditObjective={handleEditObjective}
+                isDarkMode={isDarkMode}
+              />
+            )}
+          </>
         )}
       </div>
 
