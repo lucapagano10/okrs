@@ -42,17 +42,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   };
 
   const getBackgroundColor = (progress: number) => {
-    if (progress >= 80) return isDarkMode ? 'bg-green-950/30' : 'bg-green-50';
-    if (progress >= 50) return isDarkMode ? 'bg-blue-950/30' : 'bg-blue-50';
-    if (progress >= 20) return isDarkMode ? 'bg-yellow-950/30' : 'bg-yellow-50';
-    return isDarkMode ? 'bg-red-950/30' : 'bg-red-50';
-  };
-
-  const getTextColor = (progress: number) => {
-    if (progress >= 80) return isDarkMode ? 'text-green-400' : 'text-green-700';
-    if (progress >= 50) return isDarkMode ? 'text-blue-400' : 'text-blue-700';
-    if (progress >= 20) return isDarkMode ? 'text-yellow-400' : 'text-yellow-700';
-    return isDarkMode ? 'text-red-400' : 'text-red-700';
+    if (progress >= 80) return isDarkMode ? 'bg-green-950/50' : 'bg-green-50';
+    if (progress >= 50) return isDarkMode ? 'bg-blue-950/50' : 'bg-blue-50';
+    if (progress >= 20) return isDarkMode ? 'bg-yellow-950/50' : 'bg-yellow-50';
+    return isDarkMode ? 'bg-red-950/50' : 'bg-red-50';
   };
 
   const changeMonth = (offset: number) => {
@@ -152,7 +145,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                         <div
                           key={obj.id}
                           onClick={() => onEditObjective(obj.id)}
-                          className={`p-1.5 rounded text-xs cursor-pointer transition-all ${
+                          className={`p-1.5 rounded text-xs cursor-pointer transition-colors ${
                             getBackgroundColor(obj.progress)
                           } hover:brightness-110`}
                         >
@@ -172,14 +165,6 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                                 {obj.title}
                               </div>
                             </div>
-                          </div>
-                          <div className={`mt-0.5 text-[10px] flex justify-between items-center`}>
-                            <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
-                              {obj.keyResults.length} KRs
-                            </span>
-                            <span className={getTextColor(obj.progress)}>
-                              {obj.progress}%
-                            </span>
                           </div>
                         </div>
                       ))}
@@ -215,16 +200,18 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                                 </div>
                                 <span className="font-medium">{obj.title}</span>
                               </div>
-                              <div className={`text-xs mt-1 flex justify-between items-center`}>
-                                <span className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
-                                  {obj.keyResults.length} Key Results
-                                </span>
-                                <span className={getTextColor(obj.progress)}>
-                                  {obj.progress}% complete
-                                </span>
+                              <div className={`text-xs mt-1 ${
+                                isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                              }`}>
+                                {obj.keyResults.length} Key Results
                               </div>
                             </div>
                           ))}
+                          <div className={`text-xs ${
+                            isDarkMode ? 'text-blue-300' : 'text-blue-600'
+                          }`}>
+                            Click any objective to edit
+                          </div>
                         </div>
                       </div>
                     )}

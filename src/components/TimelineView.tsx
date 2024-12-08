@@ -237,17 +237,19 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                       <div className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>
                         {formatDate(objective.startDate)} - {formatDate(objective.endDate)}
                       </div>
-                      <div className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>
-                        Progress: {objective.progress}%
-                      </div>
                       <div className="mt-2 space-y-1.5">
                         {objective.keyResults.map((kr, index) => (
                           <div key={kr.id} className={`text-xs ${
                             isDarkMode ? 'text-gray-400' : 'text-gray-500'
                           }`}>
-                            • KR{index + 1}: {kr.description} ({kr.progress}%)
+                            • KR{index + 1}: {kr.description}
                           </div>
                         ))}
+                      </div>
+                      <div className={`mt-2 text-xs ${
+                        isDarkMode ? 'text-blue-300' : 'text-blue-600'
+                      }`}>
+                        Click to edit
                       </div>
                     </div>
                   </div>
