@@ -372,63 +372,9 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
             />
           </div>
 
-          {/* Category Filter Labels */}
+          {/* Category Labels */}
           <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={() => setCategoryFilter('all')}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                categoryFilter === 'all'
-                  ? isDarkMode
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-blue-600 text-white'
-                  : isDarkMode
-                  ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              All Categories
-              <span className="ml-2 px-2 py-0.5 rounded-full text-xs bg-opacity-20 bg-current">
-                {objectives.length}
-              </span>
-            </button>
-            {categories.map(category => (
-              <div key={category} className="flex items-center">
-                <button
-                  onClick={() => setCategoryFilter(category)}
-                  className={`px-3 py-1.5 rounded-l-full text-sm font-medium transition-colors ${
-                    categoryFilter === category
-                      ? isDarkMode
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-blue-600 text-white'
-                      : isDarkMode
-                      ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  {category.charAt(0).toUpperCase() + category.slice(1)}
-                  <span className="ml-2 px-2 py-0.5 rounded-full text-xs bg-opacity-20 bg-current">
-                    {categoryCounts[category] || 0}
-                  </span>
-                </button>
-                <button
-                  onClick={() => handleDeleteCategory(category)}
-                  className={`p-1.5 rounded-r-full transition-colors ${
-                    categoryFilter === category
-                      ? isDarkMode
-                        ? 'bg-blue-600 text-white hover:bg-blue-700'
-                        : 'bg-blue-600 text-white hover:bg-blue-700'
-                      : isDarkMode
-                      ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                  title="Delete Category"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            ))}
+            {/* Add Category Button */}
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -438,32 +384,98 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
                   input.value = '';
                 }
               }}
-              className="flex items-center"
+              className="relative group"
             >
               <input
                 type="text"
                 name="newCategory"
                 placeholder="Add category..."
-                className={`w-32 px-3 py-1.5 rounded-l-full text-sm transition-colors ${
+                className={`w-8 focus:w-32 px-2 py-1 rounded-full text-sm transition-all duration-200 outline-none ${
                   isDarkMode
-                    ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-400'
-                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                }`}
+                    ? 'bg-gray-800 text-white placeholder-gray-500 focus:bg-gray-700'
+                    : 'bg-gray-100 text-gray-900 placeholder-gray-400 focus:bg-white'
+                } border-2 border-transparent focus:border-blue-500`}
               />
               <button
                 type="submit"
-                className={`p-1.5 rounded-r-full transition-colors ${
-                  isDarkMode
-                    ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                className={`absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded-full opacity-0 group-focus-within:opacity-100 transition-opacity ${
+                  isDarkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'
                 }`}
-                title="Add Category"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
               </button>
             </form>
+
+            {/* All Categories Label */}
+            <button
+              onClick={() => setCategoryFilter('all')}
+              className={`px-3 py-1 rounded-full text-sm font-medium transition-all ${
+                categoryFilter === 'all'
+                  ? isDarkMode
+                    ? 'bg-blue-600 text-white ring-2 ring-blue-500 ring-offset-2 ring-offset-gray-900'
+                    : 'bg-blue-600 text-white ring-2 ring-blue-500 ring-offset-2'
+                  : isDarkMode
+                  ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              All
+              <span className={`ml-2 px-1.5 py-0.5 rounded-full text-xs ${
+                categoryFilter === 'all'
+                  ? 'bg-white bg-opacity-20'
+                  : isDarkMode
+                  ? 'bg-gray-700'
+                  : 'bg-gray-200'
+              }`}>
+                {objectives.length}
+              </span>
+            </button>
+
+            {/* Category Labels */}
+            {categories.map(category => (
+              <div key={category} className="group relative">
+                <button
+                  onClick={() => setCategoryFilter(category)}
+                  className={`px-3 py-1 rounded-full text-sm font-medium transition-all ${
+                    categoryFilter === category
+                      ? isDarkMode
+                        ? 'bg-blue-600 text-white ring-2 ring-blue-500 ring-offset-2 ring-offset-gray-900'
+                        : 'bg-blue-600 text-white ring-2 ring-blue-500 ring-offset-2'
+                      : isDarkMode
+                      ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {category.charAt(0).toUpperCase() + category.slice(1)}
+                  <span className={`ml-2 px-1.5 py-0.5 rounded-full text-xs ${
+                    categoryFilter === category
+                      ? 'bg-white bg-opacity-20'
+                      : isDarkMode
+                      ? 'bg-gray-700'
+                      : 'bg-gray-200'
+                  }`}>
+                    {categoryCounts[category] || 0}
+                  </span>
+                </button>
+
+                {/* Delete Button - Shows on Hover */}
+                <button
+                  onClick={() => handleDeleteCategory(category)}
+                  className={`absolute -right-2 -top-2 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity ${
+                    isDarkMode
+                      ? 'bg-gray-700 text-red-400 hover:bg-gray-600 hover:text-red-300'
+                      : 'bg-white text-red-500 hover:text-red-600 shadow-sm'
+                  }`}
+                  title="Delete Category"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            ))}
           </div>
         </div>
 
