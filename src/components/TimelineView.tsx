@@ -39,10 +39,10 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
   };
 
   const getBackgroundColor = (progress: number) => {
-    if (progress >= 80) return isDarkMode ? 'bg-green-950/50' : 'bg-green-50';
-    if (progress >= 50) return isDarkMode ? 'bg-blue-950/50' : 'bg-blue-50';
-    if (progress >= 20) return isDarkMode ? 'bg-yellow-950/50' : 'bg-yellow-50';
-    return isDarkMode ? 'bg-red-950/50' : 'bg-red-50';
+    if (progress >= 80) return isDarkMode ? 'bg-green-950/30' : 'bg-green-50';
+    if (progress >= 50) return isDarkMode ? 'bg-blue-950/30' : 'bg-blue-50';
+    if (progress >= 20) return isDarkMode ? 'bg-yellow-950/30' : 'bg-yellow-50';
+    return isDarkMode ? 'bg-red-950/30' : 'bg-red-50';
   };
 
   const getStatusColor = (progress: number) => {
@@ -122,12 +122,16 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
       <div className={`rounded-lg p-6 ${isDarkMode ? 'bg-gray-900/50' : 'bg-gray-50'}`}>
         {/* Timeline Header */}
         <div className="flex justify-between mb-6">
-          <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-            {formatDate(new Date(earliestDate))}
-          </span>
-          <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-            {formatDate(new Date(latestDate))}
-          </span>
+          <div>
+            <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+              Start: {formatDate(new Date(earliestDate))}
+            </span>
+          </div>
+          <div>
+            <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+              End: {formatDate(new Date(latestDate))}
+            </span>
+          </div>
         </div>
 
         {/* Timeline */}
@@ -154,7 +158,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
           </div>
 
           {/* Objectives */}
-          <div className="space-y-4 pt-12">
+          <div className="space-y-3 pt-12">
             {sortedObjectives.map((objective) => {
               const { left, width, widthValue } = getPositionAndWidth(objective.startDate, objective.endDate);
               const daysRemaining = getDaysRemaining(objective.endDate);
@@ -177,7 +181,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                   >
                     {/* Progress Bar */}
                     <div
-                      className={`h-full rounded-lg ${getProgressColor(objective.progress)} opacity-20 transition-all`}
+                      className={`h-full rounded-lg ${getProgressColor(objective.progress)} opacity-10 transition-all`}
                       style={{ width: `${objective.progress}%` }}
                     />
 
