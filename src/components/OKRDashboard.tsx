@@ -5,6 +5,7 @@ import { TimeGroupView } from './TimeGroupView';
 import { TimeFilter } from './TimeFilter';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { ConfirmationModal } from './ConfirmationModal';
 
 interface OKRDashboardProps {
   isDarkMode?: boolean;
@@ -17,6 +18,8 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
   const [categories, setCategories] = useState<string[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingObjective, setEditingObjective] = useState<Objective | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
   const [timeFilter, setTimeFilter] = useState<'all' | 'current' | 'past' | 'future'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [isLoading, setIsLoading] = useState(true);
@@ -387,24 +390,42 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
               </span>
             </button>
             {categories.map(category => (
-              <button
-                key={category}
-                onClick={() => setCategoryFilter(category)}
-                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                  categoryFilter === category
-                    ? isDarkMode
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-blue-600 text-white'
-                    : isDarkMode
-                    ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                {category.charAt(0).toUpperCase() + category.slice(1)}
-                <span className="ml-2 px-2 py-0.5 rounded-full text-xs bg-opacity-20 bg-current">
-                  {categoryCounts[category] || 0}
-                </span>
-              </button>
+              <div key={category} className="flex items-center">
+                <button
+                  onClick={() => setCategoryFilter(category)}
+                  className={`px-3 py-1.5 rounded-l-full text-sm font-medium transition-colors ${
+                    categoryFilter === category
+                      ? isDarkMode
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-blue-600 text-white'
+                      : isDarkMode
+                      ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {category.charAt(0).toUpperCase() + category.slice(1)}
+                  <span className="ml-2 px-2 py-0.5 rounded-full text-xs bg-opacity-20 bg-current">
+                    {categoryCounts[category] || 0}
+                  </span>
+                </button>
+                <button
+                  onClick={() => handleDeleteCategory(category)}
+                  className={`p-1.5 rounded-r-full transition-colors ${
+                    categoryFilter === category
+                      ? isDarkMode
+                        ? 'bg-blue-600 text-white hover:bg-blue-700'
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                      : isDarkMode
+                      ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                  title="Delete Category"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
             ))}
           </div>
         </div>
