@@ -87,7 +87,7 @@ export const ObjectiveCard: React.FC<ObjectiveCardProps> = ({
 
   const handleProgressChange = (objectiveId: string, keyResultId: string, value: string) => {
     const numValue = Number(value);
-    if (!isNaN(numValue)) {
+    if (!isNaN(numValue) && keyResultId) {
       onUpdateProgress(objectiveId, keyResultId, numValue);
     }
   };
@@ -195,7 +195,7 @@ export const ObjectiveCard: React.FC<ObjectiveCardProps> = ({
                           <input
                             type="number"
                             value={kr.currentValue}
-                            onChange={(e) => handleProgressChange(objective.id, kr.id, e.target.value)}
+                            onChange={(e) => handleProgressChange(objective.id, kr.id || '', e.target.value)}
                             className={`w-16 px-2 py-1 text-sm border rounded-md ${
                               isDarkMode
                                 ? 'bg-gray-700 border-gray-600 text-gray-200'

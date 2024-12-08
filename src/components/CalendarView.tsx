@@ -4,14 +4,14 @@ import { ProgressChart } from './ProgressChart';
 
 interface CalendarViewProps {
   objectives: Objective[];
+  onObjectiveClick: (objectiveId: string) => void;
   isDarkMode?: boolean;
-  onEditObjective: (objectiveId: string) => void;
 }
 
 export const CalendarView: React.FC<CalendarViewProps> = ({
   objectives,
+  onObjectiveClick,
   isDarkMode = false,
-  onEditObjective
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
 
@@ -144,7 +144,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                       {objectives.slice(0, 3).map((obj) => (
                         <div
                           key={obj.id}
-                          onClick={() => onEditObjective(obj.id)}
+                          onClick={() => onObjectiveClick(obj.id)}
                           className={`p-1.5 rounded text-xs cursor-pointer transition-colors ${
                             getBackgroundColor(obj.progress)
                           } hover:brightness-110`}

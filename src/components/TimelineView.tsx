@@ -4,16 +4,16 @@ import { ProgressChart } from './ProgressChart';
 
 interface TimelineViewProps {
   objectives: Objective[];
+  onObjectiveClick: (objectiveId: string) => void;
   isDarkMode?: boolean;
-  onEditObjective: (objectiveId: string) => void;
 }
 
 type ZoomLevel = 'month' | 'quarter' | 'year';
 
 export const TimelineView: React.FC<TimelineViewProps> = ({
   objectives,
+  onObjectiveClick,
   isDarkMode = false,
-  onEditObjective
 }) => {
   const [zoomLevel, setZoomLevel] = useState<ZoomLevel>('quarter');
 
@@ -176,7 +176,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                   <div
                     key={objective.id}
                     className="relative h-16 group"
-                    onClick={() => onEditObjective(objective.id)}
+                    onClick={() => onObjectiveClick(objective.id)}
                   >
                     {/* Objective Bar */}
                     <div

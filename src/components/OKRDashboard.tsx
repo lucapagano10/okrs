@@ -47,6 +47,7 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
     if (!user?.id) return;
 
     try {
+      setIsLoading(true);
       const { data: objectives, error } = await supabase
         .from('objectives')
         .select(`
@@ -86,6 +87,8 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
       }
     } catch (error) {
       console.error('Error fetching objectives:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -317,22 +320,7 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
     }
   };
 
-  const handleSaveObjective = async (objectiveData: {
-    title: string;
-    description: string;
-    category: string;
-    startDate: string;
-    endDate: string;
-    keyResults: {
-      id?: string;
-      description: string;
-      targetValue: number;
-      currentValue: number;
-      unit: string;
-      startDate: string;
-      endDate: string;
-    }[];
-  }) => {
+  const handleSaveObjective = async (objectiveData: Partial<Objective>) => {
     if (!user?.id) return;
 
     try {
@@ -353,7 +341,7 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
         if (objError) throw objError;
 
         // Update or create key results
-        for (const kr of objectiveData.keyResults) {
+        for (const kr of objectiveData.keyResults || []) {
           if (kr.id) {
             // Update existing key result
             const { error: krError } = await supabase
@@ -409,7 +397,7 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
         if (objError || !objective) throw objError;
 
         // Create key results
-        for (const kr of objectiveData.keyResults) {
+        for (const kr of objectiveData.keyResults || []) {
           const { error: krError } = await supabase
             .from('key_results')
             .insert([{
