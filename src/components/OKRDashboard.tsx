@@ -139,7 +139,7 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
             category: objectiveData.category || '',
             start_date: objectiveData.startDate || new Date().toISOString(),
             end_date: objectiveData.endDate || new Date().toISOString(),
-            status: 'active' as const
+            status: 'not-started' as const
           })
           .eq('id', selectedObjective.id);
 
@@ -158,7 +158,7 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
                 unit: kr.unit || '',
                 start_date: kr.startDate || new Date().toISOString(),
                 end_date: kr.endDate || new Date().toISOString(),
-                status: 'active' as const
+                status: 'not-started' as const
               })
               .eq('id', kr.id);
 
@@ -175,7 +175,7 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
                 objective_id: selectedObjective.id,
                 start_date: kr.startDate || new Date().toISOString(),
                 end_date: kr.endDate || new Date().toISOString(),
-                status: 'active' as const,
+                status: 'not-started' as const,
                 progress: 0
               }]);
 
@@ -194,7 +194,7 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
             end_date: objectiveData.endDate || new Date().toISOString(),
             user_id: user.id,
             progress: 0,
-            status: 'active' as const
+            status: 'not-started' as const
           }])
           .select()
           .single();
@@ -214,7 +214,7 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
               start_date: kr.startDate || new Date().toISOString(),
               end_date: kr.endDate || new Date().toISOString(),
               progress: 0,
-              status: 'active' as const
+              status: 'not-started' as const
             }]);
 
           if (krError) throw krError;
