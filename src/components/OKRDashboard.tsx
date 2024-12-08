@@ -127,6 +127,7 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
       if (error) throw error;
 
       await fetchCategories();
+      setIsManagingCategories(false);
       showNotification('Category added successfully');
     } catch (error) {
       console.error('Error adding category:', error);
