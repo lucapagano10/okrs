@@ -32,10 +32,17 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
   );
 
   const getProgressColor = (progress: number) => {
-    if (progress >= 80) return isDarkMode ? 'bg-green-500/30' : 'bg-green-100';
-    if (progress >= 50) return isDarkMode ? 'bg-blue-500/30' : 'bg-blue-100';
-    if (progress >= 20) return isDarkMode ? 'bg-yellow-500/30' : 'bg-yellow-100';
-    return isDarkMode ? 'bg-red-500/30' : 'bg-red-100';
+    if (progress >= 80) return isDarkMode ? 'bg-green-500' : 'bg-green-500';
+    if (progress >= 50) return isDarkMode ? 'bg-blue-500' : 'bg-blue-500';
+    if (progress >= 20) return isDarkMode ? 'bg-yellow-500' : 'bg-yellow-500';
+    return isDarkMode ? 'bg-red-500' : 'bg-red-500';
+  };
+
+  const getBackgroundColor = (progress: number) => {
+    if (progress >= 80) return isDarkMode ? 'bg-green-950/50' : 'bg-green-50';
+    if (progress >= 50) return isDarkMode ? 'bg-blue-950/50' : 'bg-blue-50';
+    if (progress >= 20) return isDarkMode ? 'bg-yellow-950/50' : 'bg-yellow-50';
+    return isDarkMode ? 'bg-red-950/50' : 'bg-red-50';
   };
 
   const getStatusColor = (progress: number) => {
@@ -80,6 +87,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
 
   return (
     <div className={`p-6 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg`}>
+      {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <h3 className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
           Timeline View
@@ -110,133 +118,135 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
         </div>
       </div>
 
-      {/* Timeline Header */}
-      <div className="flex justify-between mb-4">
-        <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-          {formatDate(new Date(earliestDate))}
-        </span>
-        <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-          {formatDate(new Date(latestDate))}
-        </span>
-      </div>
-
-      {/* Timeline */}
-      <div className="relative">
-        {/* Timeline Base Line */}
-        <div className={`absolute top-6 left-0 right-0 h-0.5 ${
-          isDarkMode ? 'bg-gray-700' : 'bg-gray-200'
-        }`} />
-
-        {/* Today Marker */}
-        <div
-          className={`absolute top-0 h-12 w-0.5 ${isDarkMode ? 'bg-blue-500' : 'bg-blue-600'}`}
-          style={{
-            left: `${((new Date().getTime() - new Date(earliestDate).getTime()) /
-              (new Date(latestDate).getTime() - new Date(earliestDate).getTime())) * 100}%`,
-            zIndex: 20
-          }}
-        >
-          <div className={`absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-medium ${
-            isDarkMode ? 'text-blue-400' : 'text-blue-600'
-          }`}>
-            Today
-          </div>
+      {/* Timeline Container */}
+      <div className={`rounded-lg p-6 ${isDarkMode ? 'bg-gray-900/50' : 'bg-gray-50'}`}>
+        {/* Timeline Header */}
+        <div className="flex justify-between mb-6">
+          <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+            {formatDate(new Date(earliestDate))}
+          </span>
+          <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+            {formatDate(new Date(latestDate))}
+          </span>
         </div>
 
-        {/* Objectives */}
-        <div className="space-y-4 pt-12">
-          {sortedObjectives.map((objective) => {
-            const { left, width, widthValue } = getPositionAndWidth(objective.startDate, objective.endDate);
-            const daysRemaining = getDaysRemaining(objective.endDate);
-            const isOverdue = daysRemaining < 0;
+        {/* Timeline */}
+        <div className="relative">
+          {/* Timeline Base Line */}
+          <div className={`absolute top-6 left-0 right-0 h-0.5 ${
+            isDarkMode ? 'bg-gray-700' : 'bg-gray-200'
+          }`} />
 
-            return (
-              <div
-                key={objective.id}
-                className="relative h-16 group"
-                onClick={() => onEditObjective(objective.id)}
-              >
-                {/* Objective Bar */}
+          {/* Today Marker */}
+          <div
+            className={`absolute top-0 h-12 w-0.5 ${isDarkMode ? 'bg-blue-500' : 'bg-blue-600'}`}
+            style={{
+              left: `${((new Date().getTime() - new Date(earliestDate).getTime()) /
+                (new Date(latestDate).getTime() - new Date(earliestDate).getTime())) * 100}%`,
+              zIndex: 20
+            }}
+          >
+            <div className={`absolute -top-6 left-1/2 transform -translate-x-1/2 px-2 py-1 rounded text-xs font-medium ${
+              isDarkMode ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-100 text-blue-600'
+            }`}>
+              Today
+            </div>
+          </div>
+
+          {/* Objectives */}
+          <div className="space-y-4 pt-12">
+            {sortedObjectives.map((objective) => {
+              const { left, width, widthValue } = getPositionAndWidth(objective.startDate, objective.endDate);
+              const daysRemaining = getDaysRemaining(objective.endDate);
+              const isOverdue = daysRemaining < 0;
+
+              return (
                 <div
-                  className={`absolute h-14 rounded-lg cursor-pointer transition-all shadow-sm ${
-                    isDarkMode ? 'hover:ring-2 ring-gray-600' : 'hover:ring-2 ring-gray-200'
-                  }`}
-                  style={{ left, width }}
+                  key={objective.id}
+                  className="relative h-16 group"
+                  onClick={() => onEditObjective(objective.id)}
                 >
-                  {/* Background */}
-                  <div className={`absolute inset-0 rounded-lg ${getProgressColor(objective.progress)}`} />
-
-                  {/* Progress Bar */}
+                  {/* Objective Bar */}
                   <div
-                    className={`absolute inset-0 rounded-lg bg-current opacity-20 transition-all`}
-                    style={{ width: `${objective.progress}%` }}
-                  />
-
-                  {/* Objective Content */}
-                  <div className={`absolute inset-0 px-4 flex items-center justify-between ${
-                    isDarkMode ? 'text-white' : 'text-gray-900'
-                  }`}>
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-8 h-8 flex-shrink-0">
-                        <ProgressChart
-                          progress={objective.progress}
-                          size={32}
-                          strokeWidth={3}
-                          isDarkMode={isDarkMode}
-                        />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="font-medium truncate">
-                          {objective.title}
-                        </div>
-                        <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                          {objective.keyResults.length} Key Results
-                        </div>
-                      </div>
-                    </div>
-                    {widthValue > 15 && (
-                      <div className={`text-sm whitespace-nowrap ${getStatusColor(objective.progress)}`}>
-                        {isOverdue ? (
-                          <span className={isDarkMode ? 'text-red-400' : 'text-red-600'}>
-                            {Math.abs(daysRemaining)}d overdue
-                          </span>
-                        ) : (
-                          `${daysRemaining}d remaining`
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Tooltip */}
-                  <div className={`absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2
-                    px-4 py-2 rounded-lg text-sm opacity-0 group-hover:opacity-100 transition-opacity
-                    pointer-events-none z-30 shadow-lg ${
-                      isDarkMode
-                        ? 'bg-gray-700 text-white'
-                        : 'bg-white text-gray-900'
+                    className={`absolute h-14 rounded-lg cursor-pointer transition-all ${
+                      getBackgroundColor(objective.progress)
+                    } ${
+                      isDarkMode ? 'hover:ring-1 ring-gray-600' : 'hover:ring-1 ring-gray-300'
                     }`}
+                    style={{ left, width }}
                   >
-                    <div className="font-medium">{objective.title}</div>
-                    <div className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>
-                      {formatDate(objective.startDate)} - {formatDate(objective.endDate)}
-                    </div>
-                    <div className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>
-                      Progress: {objective.progress}%
-                    </div>
-                    <div className="mt-2 space-y-1">
-                      {objective.keyResults.map((kr, index) => (
-                        <div key={kr.id} className={`text-xs ${
-                          isDarkMode ? 'text-gray-400' : 'text-gray-500'
-                        }`}>
-                          • KR{index + 1}: {kr.description} ({kr.progress}%)
+                    {/* Progress Bar */}
+                    <div
+                      className={`h-full rounded-lg ${getProgressColor(objective.progress)} opacity-20 transition-all`}
+                      style={{ width: `${objective.progress}%` }}
+                    />
+
+                    {/* Objective Content */}
+                    <div className={`absolute inset-0 px-4 flex items-center justify-between ${
+                      isDarkMode ? 'text-white' : 'text-gray-900'
+                    }`}>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-8 h-8 flex-shrink-0">
+                          <ProgressChart
+                            progress={objective.progress}
+                            size={32}
+                            strokeWidth={3}
+                            isDarkMode={isDarkMode}
+                          />
                         </div>
-                      ))}
+                        <div className="min-w-0">
+                          <div className="font-medium truncate">
+                            {objective.title}
+                          </div>
+                          <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                            {objective.keyResults.length} Key Results
+                          </div>
+                        </div>
+                      </div>
+                      {widthValue > 15 && (
+                        <div className={`text-sm whitespace-nowrap ml-4 ${getStatusColor(objective.progress)}`}>
+                          {isOverdue ? (
+                            <span className={isDarkMode ? 'text-red-400' : 'text-red-600'}>
+                              {Math.abs(daysRemaining)}d overdue
+                            </span>
+                          ) : (
+                            `${daysRemaining}d remaining`
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Tooltip */}
+                    <div className={`absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2
+                      px-4 py-3 rounded-lg text-sm opacity-0 group-hover:opacity-100 transition-opacity
+                      pointer-events-none z-30 shadow-lg ${
+                        isDarkMode
+                          ? 'bg-gray-700 text-white'
+                          : 'bg-white text-gray-900'
+                      }`}
+                    >
+                      <div className="font-medium">{objective.title}</div>
+                      <div className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>
+                        {formatDate(objective.startDate)} - {formatDate(objective.endDate)}
+                      </div>
+                      <div className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>
+                        Progress: {objective.progress}%
+                      </div>
+                      <div className="mt-2 space-y-1.5">
+                        {objective.keyResults.map((kr, index) => (
+                          <div key={kr.id} className={`text-xs ${
+                            isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                          }`}>
+                            • KR{index + 1}: {kr.description} ({kr.progress}%)
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
