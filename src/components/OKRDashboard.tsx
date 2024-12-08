@@ -355,97 +355,112 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex flex-col space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <h1 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-              My OKRs
-            </h1>
+    <div className={`min-h-screen ${isDarkMode ? 'bg-gray-950' : 'bg-gray-50'}`}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex flex-col gap-8">
+          <div className="flex items-center justify-between">
             <button
               onClick={handleAddNewObjective}
-              className={`px-4 py-2 text-sm font-medium rounded-lg ${
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                 isDarkMode
-                  ? 'bg-blue-500 text-white hover:bg-blue-400'
-                  : 'bg-blue-600 text-white hover:bg-blue-500'
+                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
               }`}
             >
               Add New Objective
             </button>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className={`flex rounded-lg overflow-hidden border ${
-              isDarkMode ? 'border-gray-700' : 'border-gray-200'
-            }`}>
-              {(['list', 'timeline', 'calendar'] as ViewMode[]).map((mode) => (
-                <button
-                  key={mode}
-                  onClick={() => setViewMode(mode)}
-                  className={`px-4 py-2 text-sm font-medium capitalize transition-colors ${
-                    viewMode === mode
-                      ? isDarkMode
-                        ? 'bg-gray-700 text-white'
-                        : 'bg-gray-100 text-gray-900'
-                      : isDarkMode
-                      ? 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-                      : 'bg-white text-gray-600 hover:bg-gray-50'
-                  }`}
-                >
-                  {mode}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
 
-        {/* Category Filter */}
-        <CategoryFilter
-          categories={categories}
-          selectedCategory={selectedCategory}
-          onCategorySelect={setSelectedCategory}
-          onAddCategory={handleAddCategory}
-          onDeleteCategory={handleDeleteCategory}
-          isDarkMode={isDarkMode}
-        />
-
-        {/* Main Content */}
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-2 border-current border-t-transparent text-blue-500"></div>
-          </div>
-        ) : (
-          <>
-            {viewMode === 'list' && (
-              <div className="space-y-6">
-                {Object.entries(groupObjectivesByTime(filteredObjectives)).map(([key, group]) => (
-                  <TimeGroupView
-                    key={key}
-                    group={group}
-                    onEdit={handleEditObjective}
-                    onDelete={handleDeleteObjective}
-                    onUpdateProgress={handleUpdateKeyResult}
-                    isDarkMode={isDarkMode}
-                  />
+            <div className="flex items-center gap-4">
+              <div className="flex items-center rounded-lg overflow-hidden border ${
+                isDarkMode ? 'border-gray-800' : 'border-gray-200'
+              }">
+                {(['list', 'timeline', 'calendar'] as ViewMode[]).map((mode) => (
+                  <button
+                    key={mode}
+                    onClick={() => setViewMode(mode)}
+                    className={`px-4 py-2 text-sm font-medium transition-colors ${
+                      viewMode === mode
+                        ? isDarkMode
+                          ? 'bg-gray-800 text-white'
+                          : 'bg-gray-100 text-gray-900'
+                        : isDarkMode
+                          ? 'text-gray-400 hover:text-gray-200'
+                          : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    {mode}
+                  </button>
                 ))}
               </div>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <h2 className={`text-sm font-medium ${
+                  isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                }`}>
+                  Filter by Category
+                </h2>
+                <CategoryFilter
+                  categories={categories}
+                  selectedCategory={selectedCategory}
+                  onSelectCategory={setSelectedCategory}
+                  isDarkMode={isDarkMode}
+                />
+              </div>
+              <button
+                onClick={() => setIsManagingCategories(true)}
+                className={`text-sm font-medium text-blue-500 hover:text-blue-600 transition-colors ${
+                  isDarkMode ? 'text-blue-400 hover:text-blue-300' : ''
+                }`}
+              >
+                + Add New
+              </button>
+            </div>
+          </div>
+
+          {/* Main content area */}
+          <div className={`rounded-2xl ${isDarkMode ? 'bg-gray-900' : 'bg-white'}`}>
+            {isLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-2 border-current border-t-transparent text-blue-500"></div>
+              </div>
+            ) : (
+              <>
+                {viewMode === 'list' && (
+                  <div className="space-y-6">
+                    {Object.entries(groupObjectivesByTime(filteredObjectives)).map(([key, group]) => (
+                      <TimeGroupView
+                        key={key}
+                        group={group}
+                        onEdit={handleEditObjective}
+                        onDelete={handleDeleteObjective}
+                        onUpdateProgress={handleUpdateKeyResult}
+                        isDarkMode={isDarkMode}
+                      />
+                    ))}
+                  </div>
+                )}
+                {viewMode === 'timeline' && (
+                  <TimelineView
+                    objectives={filteredObjectives}
+                    onObjectiveClick={handleEditObjective}
+                    isDarkMode={isDarkMode}
+                  />
+                )}
+                {viewMode === 'calendar' && (
+                  <CalendarView
+                    objectives={filteredObjectives}
+                    onObjectiveClick={handleEditObjective}
+                    isDarkMode={isDarkMode}
+                  />
+                )}
+              </>
             )}
-            {viewMode === 'timeline' && (
-              <TimelineView
-                objectives={filteredObjectives}
-                onObjectiveClick={handleEditObjective}
-                isDarkMode={isDarkMode}
-              />
-            )}
-            {viewMode === 'calendar' && (
-              <CalendarView
-                objectives={filteredObjectives}
-                onObjectiveClick={handleEditObjective}
-                isDarkMode={isDarkMode}
-              />
-            )}
-          </>
-        )}
+          </div>
+        </div>
       </div>
 
       {/* Modals */}
