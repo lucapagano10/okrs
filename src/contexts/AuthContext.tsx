@@ -11,6 +11,14 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Get the base URL based on the environment
+const getBaseUrl = () => {
+  if (import.meta.env.DEV) {
+    return 'http://localhost:3000';
+  }
+  return 'https://lucapagano10.github.io/okrs';
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -35,7 +43,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: `${getBaseUrl()}/auth/callback`,
       },
     });
 
