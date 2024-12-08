@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Objective, groupObjectivesByTime, ObjectiveStatus, KeyResultStatus } from '../types/okr';
-import { CreateObjectiveForm } from './CreateObjectiveForm';
 import { TimeGroupView } from './TimeGroupView';
 import { TimeFilter } from './TimeFilter';
 import { TimelineView } from './TimelineView';
@@ -9,7 +8,6 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { ConfirmationModal } from './ConfirmationModal';
 import { OKRModal } from './OKRModal';
-import { validateObjective, validateKeyResult } from '../types/okr';
 
 type ViewMode = 'list' | 'timeline' | 'calendar';
 
@@ -22,8 +20,6 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
   const [objectives, setObjectives] = useState<Objective[]>([]);
   const [filteredObjectives, setFilteredObjectives] = useState<Objective[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingObjective, setEditingObjective] = useState<Objective | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
   const [timeFilter, setTimeFilter] = useState<'all' | 'current' | 'past' | 'future'>('all');
@@ -187,7 +183,7 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
 
       const { data: objective, error: objError } = await supabase
         .from('objectives')
-        .insert(objectiveToInsert)
+        .insert([objectiveToInsert])
         .select()
         .single();
 
@@ -209,12 +205,13 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
 
         const { error: krError } = await supabase
           .from('key_results')
-          .insert(keyResultToInsert);
+          .insert([keyResultToInsert]);
 
         if (krError) throw krError;
       }
 
       fetchObjectives();
+      setIsModalOpen(false);
     } catch (error) {
       console.error('Error in handleAddObjective:', error);
     }
@@ -227,6 +224,7 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
     startDate: string;
     endDate: string;
     keyResults: {
+      id?: string;
       description: string;
       targetValue: number;
       currentValue: number;
@@ -253,28 +251,46 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
 
       if (objError) throw objError;
 
-      // Update key results
+      // Update or create key results
       for (const kr of objectiveData.keyResults) {
-        const keyResultToInsert = {
-          description: kr.description,
-          target_value: kr.targetValue,
-          current_value: kr.currentValue || 0,
-          unit: kr.unit,
-          start_date: kr.startDate,
-          end_date: kr.endDate,
-          progress: 0,
-          objective_id: selectedObjective.id,
-          status: 'active' as const
-        };
+        if (kr.id) {
+          // Update existing key result
+          const { error: krError } = await supabase
+            .from('key_results')
+            .update({
+              description: kr.description,
+              target_value: kr.targetValue,
+              current_value: kr.currentValue || 0,
+              unit: kr.unit,
+              start_date: kr.startDate,
+              end_date: kr.endDate,
+              status: 'active' as const
+            })
+            .eq('id', kr.id);
 
-        const { error: krError } = await supabase
-          .from('key_results')
-          .insert(keyResultToInsert);
+          if (krError) throw krError;
+        } else {
+          // Create new key result
+          const { error: krError } = await supabase
+            .from('key_results')
+            .insert([{
+              description: kr.description,
+              target_value: kr.targetValue,
+              current_value: kr.currentValue || 0,
+              unit: kr.unit,
+              objective_id: selectedObjective.id,
+              start_date: kr.startDate,
+              end_date: kr.endDate,
+              status: 'active' as const,
+              progress: 0
+            }]);
 
-        if (krError) throw krError;
+          if (krError) throw krError;
+        }
       }
 
       fetchObjectives();
+      setIsModalOpen(false);
     } catch (error) {
       console.error('Error updating objective:', error);
     }
