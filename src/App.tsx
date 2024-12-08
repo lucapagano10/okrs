@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { OKRDashboard } from './components/OKRDashboard';
 import { LoginPage } from './components/LoginPage';
+import { AuthCallback } from './components/AuthCallback';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 const AppContent: React.FC = () => {
@@ -14,6 +15,12 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
   }, [isDarkMode]);
+
+  // Check if we're on the callback route
+  const isAuthCallback = window.location.pathname.includes('/auth/callback');
+  if (isAuthCallback) {
+    return <AuthCallback />;
+  }
 
   if (loading) {
     return (
