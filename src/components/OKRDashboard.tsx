@@ -4,6 +4,7 @@ import { CreateObjectiveForm } from './CreateObjectiveForm';
 import { CategoryManager } from './CategoryManager';
 import { ConfirmationModal } from './ConfirmationModal';
 import { TimeGroupView } from './TimeGroupView';
+import { TimeFilter } from './TimeFilter';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -14,11 +15,13 @@ interface OKRDashboardProps {
 export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }) => {
   const { user } = useAuth();
   const [objectives, setObjectives] = useState<Objective[]>([]);
+  const [filteredObjectives, setFilteredObjectives] = useState<Objective[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingObjective, setEditingObjective] = useState<Objective | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
+  const [timeFilter, setTimeFilter] = useState<'all' | 'current' | 'past' | 'future'>('all');
 
   // Fetch objectives and categories when user changes
   useEffect(() => {
@@ -27,6 +30,30 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
       fetchCategories();
     }
   }, [user]);
+
+  // Filter objectives based on time filter
+  useEffect(() => {
+    if (timeFilter === 'all') {
+      setFilteredObjectives(objectives);
+    } else {
+      const now = new Date();
+      setFilteredObjectives(objectives.filter(obj => {
+        const startDate = new Date(obj.startDate);
+        const endDate = new Date(obj.endDate);
+
+        switch (timeFilter) {
+          case 'current':
+            return startDate <= now && endDate >= now;
+          case 'past':
+            return endDate < now;
+          case 'future':
+            return startDate > now;
+          default:
+            return true;
+        }
+      }));
+    }
+  }, [timeFilter, objectives]);
 
   const fetchObjectives = async () => {
     if (!user?.id) return;
@@ -284,18 +311,23 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
     }
   };
 
-  const timeGroups = groupObjectivesByTime(objectives);
+  const timeGroups = groupObjectivesByTime(filteredObjectives);
 
   return (
     <div className={`min-h-screen p-6 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
       <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
-          <div className="mb-4 md:mb-0">
+        <div className="flex flex-col space-y-4 md:space-y-0 md:flex-row md:items-center md:justify-between mb-8">
+          <div>
             <h1 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
               OKR Dashboard
             </h1>
           </div>
-          <div className="flex gap-4">
+          <div className="flex flex-col space-y-4 md:space-y-0 md:flex-row md:items-center md:gap-4">
+            <TimeFilter
+              selectedFilter={timeFilter}
+              onFilterChange={setTimeFilter}
+              isDarkMode={isDarkMode}
+            />
             <CategoryManager
               categories={categories}
               onAddCategory={handleAddCategory}
