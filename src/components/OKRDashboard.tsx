@@ -573,6 +573,7 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
         }}
         onSave={handleSaveObjective}
         objective={selectedObjective}
+        categories={categories}
         isDarkMode={isDarkMode}
       />
 
