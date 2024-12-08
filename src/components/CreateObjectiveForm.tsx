@@ -1,23 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import { Objective } from '../types/okr';
+import { Objective, KeyResult } from '../types/okr';
 
 interface CreateObjectiveFormProps {
-  onSubmit: (objective: Omit<Objective, 'id' | 'progress' | 'status'>) => void;
+  onSubmit: (objective: Omit<Objective, 'id' | 'progress' | 'userId' | 'status'>) => void;
   onCancel: () => void;
   initialObjective?: Objective | null;
   isDarkMode?: boolean;
   availableCategories: string[];
 }
 
-interface KeyResultFormData {
+interface KeyResultFormData extends Omit<KeyResult, 'objectiveId'> {
   id: string;
   description: string;
   targetValue: number;
+  currentValue: number;
   unit: string;
   startDate: Date;
   endDate: Date;
+  progress: number;
+  status: 'not-started' | 'in-progress' | 'completed' | 'at-risk' | 'overdue';
 }
 
 export const CreateObjectiveForm: React.FC<CreateObjectiveFormProps> = ({
@@ -37,18 +40,24 @@ export const CreateObjectiveForm: React.FC<CreateObjectiveFormProps> = ({
       id: kr.id,
       description: kr.description,
       targetValue: kr.targetValue,
+      currentValue: kr.currentValue,
       unit: kr.unit,
       startDate: kr.startDate,
       endDate: kr.endDate,
+      progress: kr.progress,
+      status: kr.status || 'not-started'
     })) || [
       {
+        id: '1',
         description: '',
         targetValue: 0,
+        currentValue: 0,
         unit: '',
-        id: '1',
         startDate: new Date(),
         endDate: new Date(),
-      },
+        progress: 0,
+        status: 'not-started'
+      }
     ]
   );
 
@@ -64,9 +73,12 @@ export const CreateObjectiveForm: React.FC<CreateObjectiveFormProps> = ({
           id: kr.id,
           description: kr.description,
           targetValue: kr.targetValue,
+          currentValue: kr.currentValue,
           unit: kr.unit,
           startDate: kr.startDate,
           endDate: kr.endDate,
+          progress: kr.progress,
+          status: kr.status || 'not-started'
         }))
       );
     }
@@ -131,13 +143,16 @@ export const CreateObjectiveForm: React.FC<CreateObjectiveFormProps> = ({
     setKeyResults([
       ...keyResults,
       {
+        id: `${keyResults.length + 1}`,
         description: '',
         targetValue: 0,
+        currentValue: 0,
         unit: '',
-        id: `${keyResults.length + 1}`,
         startDate: startDate,
         endDate: endDate,
-      },
+        progress: 0,
+        status: 'not-started'
+      }
     ]);
   };
 
@@ -157,23 +172,33 @@ export const CreateObjectiveForm: React.FC<CreateObjectiveFormProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    onSubmit({
+    const objective: Omit<Objective, 'id' | 'progress' | 'userId' | 'status'> = {
       title,
       description,
       category,
       startDate,
       endDate,
       keyResults: keyResults.map((kr, index) => ({
+        ...kr,
         id: kr.id || `kr-${index + 1}`,
-        description: kr.description,
-        targetValue: kr.targetValue,
-        currentValue: 0,
-        unit: kr.unit,
-        startDate,
-        endDate,
-        progress: 0,
-      })),
-    });
+        objectiveId: '' // Will be set by backend
+      }))
+    };
+
+    onSubmit(objective);
+    setTitle('');
+    setDescription('');
+    setKeyResults([{
+      id: '1',
+      description: '',
+      targetValue: 0,
+      currentValue: 0,
+      unit: '',
+      startDate: new Date(),
+      endDate: new Date(),
+      progress: 0,
+      status: 'not-started'
+    }]);
   };
 
   const inputClasses = `w-full rounded-lg border shadow-sm text-sm transition-colors focus:ring-2 focus:ring-opacity-50 ${

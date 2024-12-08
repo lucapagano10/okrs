@@ -12,6 +12,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@supabase/supabase-js": "^2.47.2",
     "@types/react": "^18.2.43",
     "@types/react-datepicker": "^7.0.0",
     "@types/react-dom": "^18.2.17",

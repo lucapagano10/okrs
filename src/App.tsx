@@ -1,15 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { OKRDashboard } from './components/OKRDashboard';
+import { LoginPage } from './components/LoginPage';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 
-export const App: React.FC = () => {
+const AppContent: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const savedMode = localStorage.getItem('darkMode');
     return savedMode ? JSON.parse(savedMode) : window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
 
+  const { user, loading } = useAuth();
+
   useEffect(() => {
     localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
   }, [isDarkMode]);
+
+  if (loading) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center ${
+        isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'
+      }`}>
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-current border-t-transparent"></div>
+      </div>
+    );
+  }
 
   return (
     <div className={isDarkMode ? 'dark' : ''}>
@@ -35,8 +49,16 @@ export const App: React.FC = () => {
             )}
           </button>
         </div>
-        <OKRDashboard isDarkMode={isDarkMode} />
+        {user ? <OKRDashboard isDarkMode={isDarkMode} /> : <LoginPage isDarkMode={isDarkMode} />}
       </div>
     </div>
+  );
+};
+
+export const App: React.FC = () => {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 };
