@@ -3,9 +3,9 @@ import { Objective, groupObjectivesByTime, ObjectiveStatus, KeyResultStatus } fr
 import { TimeGroupView } from './TimeGroupView';
 import { TimelineView } from './TimelineView';
 import { CalendarView } from './CalendarView';
+import { CategoryFilter } from './CategoryFilter';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { ConfirmationModal } from './ConfirmationModal';
 import { OKRModal } from './OKRModal';
 
 type ViewMode = 'list' | 'timeline' | 'calendar';
@@ -19,8 +19,7 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
   const [objectives, setObjectives] = useState<Objective[]>([]);
   const [filteredObjectives, setFilteredObjectives] = useState<Objective[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
@@ -28,8 +27,6 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedObjective, setSelectedObjective] = useState<Objective | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [newCategoryInput, setNewCategoryInput] = useState('');
-  const [isAddingCategory, setIsAddingCategory] = useState(false);
 
   // Fetch objectives and categories when user changes
   useEffect(() => {
@@ -39,10 +36,14 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
     }
   }, [user]);
 
-  // Update filtered objectives when objectives change
+  // Update filtered objectives when objectives or selected category changes
   useEffect(() => {
-    setFilteredObjectives(objectives);
-  }, [objectives]);
+    if (selectedCategory) {
+      setFilteredObjectives(objectives.filter(obj => obj.category === selectedCategory));
+    } else {
+      setFilteredObjectives(objectives);
+    }
+  }, [objectives, selectedCategory]);
 
   const fetchObjectives = async () => {
     if (!user?.id) return;
@@ -109,6 +110,47 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
       }
     } catch (error) {
       console.error('Error fetching categories:', error);
+    }
+  };
+
+  const handleAddCategory = async (name: string) => {
+    if (!user?.id) return;
+
+    try {
+      const { error } = await supabase
+        .from('user_categories')
+        .insert([{ name, user_id: user.id }]);
+
+      if (error) throw error;
+
+      await fetchCategories();
+      showNotification('Category added successfully');
+    } catch (error) {
+      console.error('Error adding category:', error);
+      showNotification('Failed to add category', 'error');
+    }
+  };
+
+  const handleDeleteCategory = async (category: string) => {
+    if (!user?.id) return;
+
+    try {
+      const { error } = await supabase
+        .from('user_categories')
+        .delete()
+        .eq('name', category)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      await fetchCategories();
+      if (selectedCategory === category) {
+        setSelectedCategory(null);
+      }
+      showNotification('Category deleted successfully');
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      showNotification('Failed to delete category', 'error');
     }
   };
 
@@ -305,74 +347,6 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
     }
   };
 
-  const handleAddCategory = async (name: string) => {
-    if (!user?.id) return;
-
-    // Validate category name
-    const trimmedName = name.trim().toLowerCase();
-    if (!trimmedName) return;
-
-    // Check if category already exists
-    if (categories.includes(trimmedName)) {
-      showNotification('Category already exists', 'error');
-      return;
-    }
-
-    try {
-      await supabase
-        .from('user_categories')
-        .insert({
-          name: trimmedName,
-          user_id: user.id
-        });
-      await fetchCategories();
-      showNotification('Category added successfully');
-      setNewCategoryInput('');
-      setIsAddingCategory(false);
-    } catch (error) {
-      console.error('Error adding category:', error);
-      showNotification('Failed to add category', 'error');
-    }
-  };
-
-  const handleDeleteCategory = async (category: string) => {
-    setCategoryToDelete(category);
-    setShowDeleteModal(true);
-  };
-
-  const confirmDeleteCategory = async (category: string) => {
-    if (!user) return;
-    try {
-      // Delete all objectives in this category
-      await supabase
-        .from('objectives')
-        .delete()
-        .eq('category', category)
-        .eq('user_id', user.id);
-
-      // Delete the category
-      await supabase
-        .from('user_categories')
-        .delete()
-        .eq('name', category)
-        .eq('user_id', user.id);
-
-      await fetchCategories();
-      await fetchObjectives();
-      setShowDeleteModal(false);
-      showNotification('Category deleted successfully');
-    } catch (error) {
-      console.error('Error deleting category:', error);
-      showNotification('Failed to delete category', 'error');
-    }
-  };
-
-  // Get category counts
-  const categoryCounts = objectives.reduce((acc, obj) => {
-    acc[obj.category] = (acc[obj.category] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-
   const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
     setToastMessage(message);
     setToastType(type);
@@ -381,162 +355,72 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
   };
 
   return (
-    <div className={`min-h-screen p-6 ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'}`}>
-      {/* Toast Notification */}
-      {showToast && (
-        <div className={`fixed top-4 right-4 px-4 py-2 rounded-lg shadow-lg transition-all transform ${
-          toastType === 'success'
-            ? isDarkMode ? 'bg-green-800 text-green-100' : 'bg-green-100 text-green-800'
-            : isDarkMode ? 'bg-red-800 text-red-100' : 'bg-red-100 text-red-800'
-        }`}>
-          {toastMessage}
-        </div>
-      )}
-
-      <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-          <div>
-            <h1 className="text-3xl font-bold">Personal OKRs</h1>
-            <p className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
-              Track and manage your objectives and key results
-            </p>
-          </div>
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex flex-col space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            {/* View Mode Switcher */}
-            <div className="flex rounded-lg shadow-sm">
-              <button
-                onClick={() => setViewMode('list')}
-                className={`px-4 py-2 text-sm font-medium rounded-l-lg ${
-                  viewMode === 'list'
-                    ? 'bg-blue-600 text-white'
-                    : isDarkMode
-                    ? 'bg-gray-700 text-gray-200 hover:bg-gray-600'
-                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                List
-              </button>
-              <button
-                onClick={() => setViewMode('timeline')}
-                className={`px-4 py-2 text-sm font-medium ${
-                  viewMode === 'timeline'
-                    ? 'bg-blue-600 text-white'
-                    : isDarkMode
-                    ? 'bg-gray-700 text-gray-200 hover:bg-gray-600'
-                    : 'bg-white text-gray-700 border-y border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                Timeline
-              </button>
-              <button
-                onClick={() => setViewMode('calendar')}
-                className={`px-4 py-2 text-sm font-medium rounded-r-lg ${
-                  viewMode === 'calendar'
-                    ? 'bg-blue-600 text-white'
-                    : isDarkMode
-                    ? 'bg-gray-700 text-gray-200 hover:bg-gray-600'
-                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                Calendar
-              </button>
-            </div>
+            <h1 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+              My OKRs
+            </h1>
             <button
               onClick={handleAddNewObjective}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className={`px-4 py-2 text-sm font-medium rounded-lg ${
+                isDarkMode
+                  ? 'bg-blue-500 text-white hover:bg-blue-400'
+                  : 'bg-blue-600 text-white hover:bg-blue-500'
+              }`}
             >
               Add New Objective
             </button>
           </div>
-        </div>
-
-        {/* Category Management */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-              Categories
-            </h2>
-            {isAddingCategory ? (
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={newCategoryInput}
-                  onChange={(e) => setNewCategoryInput(e.target.value)}
-                  placeholder="Enter category name"
-                  className={`px-3 py-1 text-sm rounded-md ${
-                    isDarkMode
-                      ? 'bg-gray-700 border-gray-600 text-white'
-                      : 'border-gray-300 text-gray-900'
-                  }`}
-                />
+          <div className="flex items-center gap-4">
+            <div className={`flex rounded-lg overflow-hidden border ${
+              isDarkMode ? 'border-gray-700' : 'border-gray-200'
+            }`}>
+              {(['list', 'timeline', 'calendar'] as ViewMode[]).map((mode) => (
                 <button
-                  onClick={() => handleAddCategory(newCategoryInput)}
-                  className="px-3 py-1 text-sm bg-green-600 text-white rounded-md hover:bg-green-700"
-                >
-                  Add
-                </button>
-                <button
-                  onClick={() => {
-                    setIsAddingCategory(false);
-                    setNewCategoryInput('');
-                  }}
-                  className={`px-3 py-1 text-sm rounded-md ${
-                    isDarkMode
-                      ? 'bg-gray-700 text-gray-200 hover:bg-gray-600'
-                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                  key={mode}
+                  onClick={() => setViewMode(mode)}
+                  className={`px-4 py-2 text-sm font-medium capitalize transition-colors ${
+                    viewMode === mode
+                      ? isDarkMode
+                        ? 'bg-gray-700 text-white'
+                        : 'bg-gray-100 text-gray-900'
+                      : isDarkMode
+                      ? 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                      : 'bg-white text-gray-600 hover:bg-gray-50'
                   }`}
                 >
-                  Cancel
+                  {mode}
                 </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => setIsAddingCategory(true)}
-                className={`px-3 py-1 text-sm rounded-md ${
-                  isDarkMode
-                    ? 'bg-gray-700 text-gray-200 hover:bg-gray-600'
-                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                Add Category
-              </button>
-            )}
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {categories.map((category) => (
-              <div
-                key={category}
-                className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
-                  isDarkMode ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-700'
-                }`}
-              >
-                {category}
-                <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                  ({categoryCounts[category] || 0})
-                </span>
-                <button
-                  onClick={() => handleDeleteCategory(category)}
-                  className="ml-1 text-red-500 hover:text-red-600"
-                >
-                  ×
-                </button>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Content */}
+        {/* Category Filter */}
+        <CategoryFilter
+          categories={categories}
+          selectedCategory={selectedCategory}
+          onCategorySelect={setSelectedCategory}
+          onAddCategory={handleAddCategory}
+          onDeleteCategory={handleDeleteCategory}
+          isDarkMode={isDarkMode}
+        />
+
+        {/* Main Content */}
         {isLoading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-current border-t-transparent"></div>
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-current border-t-transparent text-blue-500"></div>
           </div>
         ) : (
           <>
             {viewMode === 'list' && (
-              <div className="space-y-8">
-                {Object.entries(groupObjectivesByTime(filteredObjectives)).map(([label, group]) => (
+              <div className="space-y-6">
+                {Object.entries(groupObjectivesByTime(filteredObjectives)).map(([key, group]) => (
                   <TimeGroupView
-                    key={label}
+                    key={key}
                     group={group}
                     onEdit={handleEditObjective}
                     onDelete={handleDeleteObjective}
@@ -567,29 +451,23 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
       {/* Modals */}
       <OKRModal
         isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setSelectedObjective(null);
-        }}
+        onClose={() => setIsModalOpen(false)}
         onSave={handleSaveObjective}
         objective={selectedObjective}
         categories={categories}
         isDarkMode={isDarkMode}
       />
 
-      <ConfirmationModal
-        isOpen={showDeleteModal}
-        onClose={() => setShowDeleteModal(false)}
-        onConfirm={() => {
-          if (categoryToDelete) {
-            confirmDeleteCategory(categoryToDelete);
-            setCategoryToDelete(null);
-          }
-        }}
-        title="Delete Category"
-        message="Are you sure you want to delete this category? All objectives in this category will also be deleted."
-        isDarkMode={isDarkMode}
-      />
+      {/* Toast */}
+      {showToast && (
+        <div className={`fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg ${
+          toastType === 'success'
+            ? isDarkMode ? 'bg-green-500' : 'bg-green-600'
+            : isDarkMode ? 'bg-red-500' : 'bg-red-600'
+        } text-white`}>
+          {toastMessage}
+        </div>
+      )}
     </div>
   );
 };
