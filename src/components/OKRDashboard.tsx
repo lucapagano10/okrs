@@ -263,12 +263,14 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
       await supabase
         .from('user_categories')
         .insert({
-          name,
+          name: name.toLowerCase(),
           user_id: user.id
         });
       await fetchCategories();
+      showNotification('Category added successfully');
     } catch (error) {
       console.error('Error adding category:', error);
+      showNotification('Failed to add category', 'error');
     }
   };
 
@@ -371,7 +373,7 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
           </div>
 
           {/* Category Filter Labels */}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => setCategoryFilter('all')}
               className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
@@ -427,6 +429,41 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
                 </button>
               </div>
             ))}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const input = e.currentTarget.elements.namedItem('newCategory') as HTMLInputElement;
+                if (input.value.trim()) {
+                  handleAddCategory(input.value.trim());
+                  input.value = '';
+                }
+              }}
+              className="flex items-center"
+            >
+              <input
+                type="text"
+                name="newCategory"
+                placeholder="Add category..."
+                className={`w-32 px-3 py-1.5 rounded-l-full text-sm transition-colors ${
+                  isDarkMode
+                    ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-400'
+                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                }`}
+              />
+              <button
+                type="submit"
+                className={`p-1.5 rounded-r-full transition-colors ${
+                  isDarkMode
+                    ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+                title="Add Category"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+              </button>
+            </form>
           </div>
         </div>
 
