@@ -403,7 +403,7 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
         <CreateObjectiveForm
           onCancel={() => setIsFormOpen(false)}
           onSubmit={handleAddObjective}
-          categories={categories}
+          availableCategories={categories}
           initialObjective={editingObjective}
           isDarkMode={isDarkMode}
         />
