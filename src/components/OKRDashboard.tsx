@@ -184,6 +184,20 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
 
         if (objError) throw objError;
 
+        // Get IDs of key results that should remain
+        const updatedKrIds = new Set((objectiveData.keyResults || [])
+          .filter(kr => kr.id)
+          .map(kr => kr.id));
+
+        // Delete key results that were removed
+        const { error: deleteError } = await supabase
+          .from('key_results')
+          .delete()
+          .eq('objective_id', editingObjective.id)
+          .not('id', 'in', `(${Array.from(updatedKrIds).join(',')})`);
+
+        if (deleteError) throw deleteError;
+
         // Update or create key results
         for (const kr of objectiveData.keyResults || []) {
           if (kr.id) {
@@ -260,9 +274,8 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
         }
       }
 
-      fetchObjectives();
-      setEditingObjective(null);
       showNotification('Objective saved successfully');
+      await fetchObjectives();
     } catch (error) {
       console.error('Error saving objective:', error);
       showNotification('Failed to save objective', 'error');
