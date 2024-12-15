@@ -28,14 +28,13 @@ const DashboardOverview: React.FC<{ objectives: Objective[]; isDarkMode: boolean
     return acc;
   }, {} as Record<string, number>);
 
-  // Get upcoming deadlines (next 7 days)
+  // Get upcoming deadlines (within current month)
   const upcomingDeadlines = objectives
     .filter(obj => {
       const deadline = new Date(obj.endDate);
       const today = new Date();
-      const sevenDays = new Date();
-      sevenDays.setDate(today.getDate() + 7);
-      return deadline >= today && deadline <= sevenDays;
+      const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      return deadline >= today && deadline <= endOfMonth;
     })
     .sort((a, b) => new Date(a.endDate).getTime() - new Date(b.endDate).getTime());
 
