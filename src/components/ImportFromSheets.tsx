@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Objective, KeyResult } from '../types/okr';
+import { Objective } from '../types/okr';
 
 interface ImportFromSheetsProps {
   isOpen: boolean;
