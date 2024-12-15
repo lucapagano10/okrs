@@ -9,12 +9,104 @@ import { useAuth } from '../contexts/AuthContext';
 import { OKRModal } from './OKRModal';
 import { CreateObjectiveForm } from './CreateObjectiveForm';
 import { ImportFromSheets } from './ImportFromSheets';
+import { ProgressCharts } from './ProgressCharts';
 
 type ViewMode = 'List' | 'Timeline' | 'Calendar';
 
 interface OKRDashboardProps {
   isDarkMode?: boolean;
 }
+
+const DashboardOverview: React.FC<{ objectives: Objective[]; isDarkMode: boolean }> = ({ objectives, isDarkMode }) => {
+  const totalObjectives = objectives.length;
+  const completedObjectives = objectives.filter(obj => obj.progress === 100).length;
+  const overallProgress = objectives.reduce((acc, obj) => acc + obj.progress, 0) / (totalObjectives || 1);
+
+  // Group by category
+  const categoryStats = objectives.reduce((acc, obj) => {
+    acc[obj.category] = (acc[obj.category] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  // Get upcoming deadlines (next 7 days)
+  const upcomingDeadlines = objectives
+    .filter(obj => {
+      const deadline = new Date(obj.endDate);
+      const today = new Date();
+      const sevenDays = new Date();
+      sevenDays.setDate(today.getDate() + 7);
+      return deadline >= today && deadline <= sevenDays;
+    })
+    .sort((a, b) => new Date(a.endDate).getTime() - new Date(b.endDate).getTime());
+
+  return (
+    <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8`}>
+      {/* Overall Progress */}
+      <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white'} shadow-sm`}>
+        <h3 className={`text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+          Overall Progress
+        </h3>
+        <div className="mt-2 flex items-baseline">
+          <p className={`text-2xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+            {Math.round(overallProgress)}%
+          </p>
+          <p className={`ml-2 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+            ({completedObjectives}/{totalObjectives} completed)
+          </p>
+        </div>
+        <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
+          <div
+            className="bg-blue-600 h-2 rounded-full"
+            style={{ width: `${overallProgress}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Category Breakdown */}
+      <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white'} shadow-sm`}>
+        <h3 className={`text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+          Category Breakdown
+        </h3>
+        <div className="mt-2 space-y-2">
+          {Object.entries(categoryStats).map(([category, count]) => (
+            <div key={category} className="flex justify-between items-center">
+              <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                {category}
+              </span>
+              <span className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                {count}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Upcoming Deadlines */}
+      <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white'} shadow-sm col-span-1 md:col-span-2`}>
+        <h3 className={`text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+          Upcoming Deadlines
+        </h3>
+        <div className="mt-2 space-y-2">
+          {upcomingDeadlines.slice(0, 3).map(obj => (
+            <div key={obj.id} className="flex justify-between items-center">
+              <span className={`text-sm truncate flex-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                {obj.title}
+              </span>
+              <span className={`text-sm ml-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                {new Date(obj.endDate).toLocaleDateString()}
+              </span>
+            </div>
+          ))}
+          {upcomingDeadlines.length === 0 && (
+            <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              No upcoming deadlines in the next 7 days
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }) => {
   const { user } = useAuth();
@@ -428,6 +520,12 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
     <div className={`min-h-screen ${isDarkMode ? 'bg-gray-950' : 'bg-gray-50'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col gap-8">
+          {/* Dashboard Overview */}
+          <DashboardOverview objectives={objectives} isDarkMode={isDarkMode} />
+
+          {/* Progress Charts */}
+          <ProgressCharts objectives={objectives} isDarkMode={isDarkMode} />
+
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <button
