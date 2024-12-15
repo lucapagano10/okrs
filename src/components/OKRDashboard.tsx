@@ -411,61 +411,6 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
     }
   };
 
-  const handleImportObjectives = async (objectives: Omit<Objective, 'id' | 'progress' | 'user_id' | 'status'>[]) => {
-    if (!user?.id) return;
-
-    try {
-      setIsLoading(true);
-
-      for (const objective of objectives) {
-        // Create objective
-        const { data: newObjective, error: objError } = await supabase
-          .from('objectives')
-          .insert([{
-            title: objective.title,
-            description: objective.description,
-            category: objective.category,
-            start_date: objective.startDate,
-            end_date: objective.endDate,
-            user_id: user.id,
-            progress: 0,
-            status: 'not-started' as const
-          }])
-          .select()
-          .single();
-
-        if (objError || !newObjective) throw objError;
-
-        // Create key results
-        const keyResultsData = objective.keyResults.map(kr => ({
-          description: kr.description,
-          target_value: kr.targetValue,
-          current_value: kr.currentValue,
-          unit: kr.unit,
-          start_date: kr.startDate,
-          end_date: kr.endDate,
-          progress: 0,
-          objective_id: newObjective.id,
-          status: 'not-started' as const
-        }));
-
-        const { error: krError } = await supabase
-          .from('key_results')
-          .insert(keyResultsData);
-
-        if (krError) throw krError;
-      }
-
-      showNotification('Objectives imported successfully');
-      await fetchObjectives();
-    } catch (error) {
-      console.error('Error importing objectives:', error);
-      showNotification('Failed to import objectives', 'error');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
     <div className={`min-h-screen ${isDarkMode ? 'bg-gray-950' : 'bg-gray-50'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -598,8 +543,6 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
         <ImportFromSheets
           isOpen={isImporting}
           onClose={() => setIsImporting(false)}
-          onImport={handleImportObjectives}
-          categories={categories}
           isDarkMode={isDarkMode}
         />
       )}
