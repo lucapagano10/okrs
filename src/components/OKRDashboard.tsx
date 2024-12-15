@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { OKRModal } from './OKRModal';
 import { CreateObjectiveForm } from './CreateObjectiveForm';
+import { ImportFromSheets } from './ImportFromSheets';
 
 type ViewMode = 'List' | 'Timeline' | 'Calendar';
 
@@ -28,6 +29,7 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
   const [isLoading, setIsLoading] = useState(true);
   const [isCreatingObjective, setIsCreatingObjective] = useState(false);
   const [editingObjective, setEditingObjective] = useState<Objective | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
 
   // Fetch objectives and categories when user changes
   useEffect(() => {
@@ -409,21 +411,88 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
     }
   };
 
+  const handleImportObjectives = async (objectives: Omit<Objective, 'id' | 'progress' | 'user_id' | 'status'>[]) => {
+    if (!user?.id) return;
+
+    try {
+      setIsLoading(true);
+
+      for (const objective of objectives) {
+        // Create objective
+        const { data: newObjective, error: objError } = await supabase
+          .from('objectives')
+          .insert([{
+            title: objective.title,
+            description: objective.description,
+            category: objective.category,
+            start_date: objective.startDate,
+            end_date: objective.endDate,
+            user_id: user.id,
+            progress: 0,
+            status: 'not-started' as const
+          }])
+          .select()
+          .single();
+
+        if (objError || !newObjective) throw objError;
+
+        // Create key results
+        const keyResultsData = objective.keyResults.map(kr => ({
+          description: kr.description,
+          target_value: kr.targetValue,
+          current_value: kr.currentValue,
+          unit: kr.unit,
+          start_date: kr.startDate,
+          end_date: kr.endDate,
+          progress: 0,
+          objective_id: newObjective.id,
+          status: 'not-started' as const
+        }));
+
+        const { error: krError } = await supabase
+          .from('key_results')
+          .insert(keyResultsData);
+
+        if (krError) throw krError;
+      }
+
+      showNotification('Objectives imported successfully');
+      await fetchObjectives();
+    } catch (error) {
+      console.error('Error importing objectives:', error);
+      showNotification('Failed to import objectives', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className={`min-h-screen ${isDarkMode ? 'bg-gray-950' : 'bg-gray-50'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col gap-8">
           <div className="flex items-center justify-between">
-            <button
-              onClick={() => setIsCreatingObjective(true)}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                isDarkMode
-                  ? 'bg-blue-600 text-white hover:bg-blue-700'
-                  : 'bg-blue-600 text-white hover:bg-blue-700'
-              }`}
-            >
-              Add New Objective
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setIsCreatingObjective(true)}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  isDarkMode
+                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
+              >
+                Add New Objective
+              </button>
+              <button
+                onClick={() => setIsImporting(true)}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  isDarkMode
+                    ? 'bg-gray-800 text-gray-200 hover:bg-gray-700'
+                    : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                }`}
+              >
+                Import from Sheets
+              </button>
+            </div>
 
             <div className="flex items-center gap-4">
               <div className={`flex items-center rounded-lg overflow-hidden border ${
@@ -520,6 +589,16 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
           onClose={() => setEditingObjective(null)}
           objective={editingObjective}
           onSave={handleSaveObjective}
+          categories={categories}
+          isDarkMode={isDarkMode}
+        />
+      )}
+
+      {isImporting && (
+        <ImportFromSheets
+          isOpen={isImporting}
+          onClose={() => setIsImporting(false)}
+          onImport={handleImportObjectives}
           categories={categories}
           isDarkMode={isDarkMode}
         />
