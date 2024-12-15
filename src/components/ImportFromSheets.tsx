@@ -99,6 +99,66 @@ export const ImportFromSheets: React.FC<ImportFromSheetsProps> = ({
           progress: 0,
           status: 'not-started',
           user_id: userId
+        },
+        {
+          title: "Robust market derivatives architecture",
+          description: "Ensure complete derivatives infrastructure",
+          category: "Architecture",
+          start_date: "2024-01-01",
+          end_date: "2025-03-31",
+          progress: 0,
+          status: 'not-started',
+          user_id: userId
+        },
+        {
+          title: "Risk Management in Derivatives Product",
+          description: "Design comprehensive derivatives risk management",
+          category: "Risk Management",
+          start_date: "2024-01-01",
+          end_date: "2025-03-31",
+          progress: 0,
+          status: 'not-started',
+          user_id: userId
+        },
+        {
+          title: "Compliance Alignment",
+          description: "Ensure all products are compliant with regulations",
+          category: "Compliance",
+          start_date: "2024-01-01",
+          end_date: "2025-03-31",
+          progress: 0,
+          status: 'not-started',
+          user_id: userId
+        },
+        {
+          title: "Market Making Framework",
+          description: "Design and implement market making strategy",
+          category: "Trading",
+          start_date: "2024-01-01",
+          end_date: "2025-03-31",
+          progress: 0,
+          status: 'not-started',
+          user_id: userId
+        },
+        {
+          title: "Liquidity and Price Discovery",
+          description: "Design market dynamics for derivatives launch",
+          category: "Trading",
+          start_date: "2024-01-01",
+          end_date: "2025-03-31",
+          progress: 0,
+          status: 'not-started',
+          user_id: userId
+        },
+        {
+          title: "Internal Market Making",
+          description: "Establish internal market making capabilities",
+          category: "Trading",
+          start_date: "2024-01-01",
+          end_date: "2025-03-31",
+          progress: 0,
+          status: 'not-started',
+          user_id: userId
         }
       ];
 
@@ -113,7 +173,7 @@ export const ImportFromSheets: React.FC<ImportFromSheetsProps> = ({
 
       // Map of objectives to their key results
       const objectiveKeyResults: ObjectiveKeyResults = {
-        0: [ // First objective
+        0: [ // First objective - Successfully launch key products
           {
             description: "Validate technical implementations for order execution",
             target_value: 100,
@@ -131,7 +191,7 @@ export const ImportFromSheets: React.FC<ImportFromSheetsProps> = ({
             end_date: "2025-01-15"
           }
         ],
-        1: [ // Second objective
+        1: [ // Second objective - Alpaca integration
           {
             description: "Successfully complete end-to-end testing of API integration",
             target_value: 100,
@@ -147,9 +207,17 @@ export const ImportFromSheets: React.FC<ImportFromSheetsProps> = ({
             unit: "percentage",
             start_date: "2024-01-01",
             end_date: "2025-03-31"
+          },
+          {
+            description: "Complete market simulation testing",
+            target_value: 100,
+            current_value: 0,
+            unit: "percentage",
+            start_date: "2024-01-01",
+            end_date: "2025-03-31"
           }
         ],
-        2: [ // Third objective
+        2: [ // Third objective - Risk Management in Spot
           {
             description: "Design comprehensive risk management system",
             target_value: 100,
@@ -167,7 +235,7 @@ export const ImportFromSheets: React.FC<ImportFromSheetsProps> = ({
             end_date: "2025-01-31"
           }
         ],
-        3: [ // Fourth objective
+        3: [ // Fourth objective - Borrow rate system
           {
             description: "Define borrow rate fee business structure",
             target_value: 100,
@@ -193,7 +261,7 @@ export const ImportFromSheets: React.FC<ImportFromSheetsProps> = ({
             end_date: "2025-02-15"
           }
         ],
-        4: [ // Fifth objective
+        4: [ // Fifth objective - Market structure economics
           {
             description: "Design competitive margin structure",
             target_value: 100,
@@ -217,6 +285,234 @@ export const ImportFromSheets: React.FC<ImportFromSheetsProps> = ({
             unit: "percentage",
             start_date: "2024-01-01",
             end_date: "2025-01-31"
+          }
+        ],
+        5: [ // Sixth objective - Derivatives architecture
+          {
+            description: "Complete product specifications (contract size, tick size, trading hours)",
+            target_value: 100,
+            current_value: 0,
+            unit: "percentage",
+            start_date: "2024-01-01",
+            end_date: "2025-02-05"
+          },
+          {
+            description: "Implement real mark price methodology",
+            target_value: 100,
+            current_value: 0,
+            unit: "percentage",
+            start_date: "2024-01-01",
+            end_date: "2025-02-15"
+          },
+          {
+            description: "Test funding rate cycle mechanism with 8h settlement periods",
+            target_value: 100,
+            current_value: 0,
+            unit: "percentage",
+            start_date: "2024-01-01",
+            end_date: "2025-02-28"
+          },
+          {
+            description: "Set market impact limit on liquidity profiles",
+            target_value: 100,
+            current_value: 0,
+            unit: "percentage",
+            start_date: "2024-01-01",
+            end_date: "2025-03-15"
+          },
+          {
+            description: "Define leverage and margin requirements for each product",
+            target_value: 100,
+            current_value: 0,
+            unit: "percentage",
+            start_date: "2024-01-01",
+            end_date: "2025-01-31"
+          }
+        ],
+        6: [ // Seventh objective - Risk Management in Derivatives
+          {
+            description: "Design insurance fund for perpetuals",
+            target_value: 100,
+            current_value: 0,
+            unit: "percentage",
+            start_date: "2024-01-01",
+            end_date: "2025-03-10"
+          },
+          {
+            description: "Design cross-collateral management system in BTC",
+            target_value: 100,
+            current_value: 0,
+            unit: "percentage",
+            start_date: "2024-01-01",
+            end_date: "2025-03-31"
+          },
+          {
+            description: "Design and implement stress testing",
+            target_value: 100,
+            current_value: 0,
+            unit: "percentage",
+            start_date: "2024-01-01",
+            end_date: "2025-02-20"
+          },
+          {
+            description: "Implement liquidation engine with high margin maintenance",
+            target_value: 100,
+            current_value: 0,
+            unit: "percentage",
+            start_date: "2024-01-01",
+            end_date: "2025-03-10"
+          },
+          {
+            description: "Establish maintenance margin monitoring system",
+            target_value: 100,
+            current_value: 0,
+            unit: "percentage",
+            start_date: "2024-01-01",
+            end_date: "2025-03-25"
+          }
+        ],
+        7: [ // Eighth objective - Compliance
+          {
+            description: "Establish compliant liquidation process",
+            target_value: 100,
+            current_value: 0,
+            unit: "percentage",
+            start_date: "2024-01-01",
+            end_date: "2025-01-31"
+          },
+          {
+            description: "Complete product documentation and risk disclosures",
+            target_value: 100,
+            current_value: 0,
+            unit: "percentage",
+            start_date: "2024-01-01",
+            end_date: "2025-01-31"
+          },
+          {
+            description: "Verify trading restrictions alignment with compliance",
+            target_value: 100,
+            current_value: 0,
+            unit: "percentage",
+            start_date: "2024-01-01",
+            end_date: "2025-02-28"
+          },
+          {
+            description: "Define market abuse monitoring requirements",
+            target_value: 100,
+            current_value: 0,
+            unit: "percentage",
+            start_date: "2024-01-01",
+            end_date: "2025-02-28"
+          },
+          {
+            description: "Establish derivatives risk disclosure acknowledgments",
+            target_value: 100,
+            current_value: 0,
+            unit: "percentage",
+            start_date: "2024-01-01",
+            end_date: "2025-01-31"
+          },
+          {
+            description: "Establish user restriction framework",
+            target_value: 100,
+            current_value: 0,
+            unit: "percentage",
+            start_date: "2024-01-01",
+            end_date: "2025-01-31"
+          }
+        ],
+        8: [ // Ninth objective - Market Making Framework
+          {
+            description: "Define ideal maximum spread & minimum depth requirements",
+            target_value: 100,
+            current_value: 0,
+            unit: "percentage",
+            start_date: "2024-01-01",
+            end_date: "2025-01-31"
+          },
+          {
+            description: "Design technical requirements for market makers",
+            target_value: 100,
+            current_value: 0,
+            unit: "percentage",
+            start_date: "2024-01-01",
+            end_date: "2025-02-15"
+          },
+          {
+            description: "Design business framework for external market making",
+            target_value: 100,
+            current_value: 0,
+            unit: "percentage",
+            start_date: "2024-01-01",
+            end_date: "2025-02-15"
+          }
+        ],
+        9: [ // Tenth objective - Liquidity and Price Discovery
+          {
+            description: "Sign agreement with market makers per product",
+            target_value: 100,
+            current_value: 0,
+            unit: "percentage",
+            start_date: "2024-01-01",
+            end_date: "2025-02-15"
+          },
+          {
+            description: "Establish competitive maker/taker fee structure",
+            target_value: 100,
+            current_value: 0,
+            unit: "percentage",
+            start_date: "2024-01-01",
+            end_date: "2025-01-31"
+          },
+          {
+            description: "Define spread structure according to market conditions",
+            target_value: 100,
+            current_value: 0,
+            unit: "percentage",
+            start_date: "2024-01-01",
+            end_date: "2025-02-28"
+          },
+          {
+            description: "Define market making incentive program",
+            target_value: 100,
+            current_value: 0,
+            unit: "percentage",
+            start_date: "2024-01-01",
+            end_date: "2024-02-15"
+          }
+        ],
+        10: [ // Eleventh objective - Internal Market Making
+          {
+            description: "Design internal market making framework and logic flow",
+            target_value: 100,
+            current_value: 0,
+            unit: "percentage",
+            start_date: "2024-01-01",
+            end_date: "2025-01-24"
+          },
+          {
+            description: "Define internal market making business model",
+            target_value: 100,
+            current_value: 0,
+            unit: "percentage",
+            start_date: "2024-01-01",
+            end_date: "2025-01-31"
+          },
+          {
+            description: "Define capital ratio needed per transacted volume",
+            target_value: 100,
+            current_value: 0,
+            unit: "percentage",
+            start_date: "2024-01-01",
+            end_date: "2025-02-28"
+          },
+          {
+            description: "Establish market making activity caps",
+            target_value: 100,
+            current_value: 0,
+            unit: "percentage",
+            start_date: "2024-01-01",
+            end_date: "2024-03-31"
           }
         ]
       };
