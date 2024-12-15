@@ -542,7 +542,10 @@ export const OKRDashboard: React.FC<OKRDashboardProps> = ({ isDarkMode = false }
       {isImporting && (
         <ImportFromSheets
           isOpen={isImporting}
-          onClose={() => setIsImporting(false)}
+          onClose={() => {
+            setIsImporting(false);
+            fetchObjectives(); // Refresh objectives after import
+          }}
           isDarkMode={isDarkMode}
         />
       )}
