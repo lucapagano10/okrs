@@ -1,96 +1,256 @@
 import React, { useState } from 'react';
-import { Objective } from '../types/okr';
+import { supabase } from '../lib/supabase';
 
-interface ImportFromSheetsProps {
+export interface ImportFromSheetsProps {
   isOpen: boolean;
   onClose: () => void;
-  onImport: (objectives: Omit<Objective, 'id' | 'progress' | 'user_id' | 'status'>[]) => Promise<void>;
-  categories: string[];
   isDarkMode?: boolean;
 }
+
+interface Objective {
+  title: string;
+  description: string;
+  category: string;
+  start_date: string;
+  end_date: string;
+  progress: number;
+  status: 'not-started';
+  user_id: string;
+}
+
+interface KeyResult {
+  description: string;
+  target_value: number;
+  current_value: number;
+  unit: string;
+  start_date: string;
+  end_date: string;
+  progress: number;
+  status: 'not-started';
+  objective_id: string;
+}
+
+type ObjectiveKeyResults = Record<number, Array<Omit<KeyResult, 'progress' | 'status' | 'objective_id'>>>;
 
 export const ImportFromSheets: React.FC<ImportFromSheetsProps> = ({
   isOpen,
   onClose,
-  onImport,
-  categories,
   isDarkMode = false,
 }) => {
-  const [data, setData] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const parseData = (text: string) => {
+  const bulkImport = async () => {
     try {
-      // Split into lines and filter out empty lines
-      const lines = text.trim().split('\n').filter(line => line.trim());
-      const objectives: Omit<Objective, 'id' | 'progress' | 'user_id' | 'status'>[] = [];
-      let currentObjective: Partial<Omit<Objective, 'id' | 'progress' | 'user_id' | 'status'>> | null = null;
+      setIsLoading(true);
+      setError(null);
 
-      for (const line of lines) {
-        const cells = line.split('\t');
-        const now = new Date().toISOString();
+      const userId = (await supabase.auth.getUser()).data.user?.id;
+      if (!userId) throw new Error('User not authenticated');
 
-        // If first cell is not empty, it's an objective
-        if (cells[0].trim()) {
-          // Save previous objective if exists
-          if (currentObjective && currentObjective.title && currentObjective.keyResults?.length) {
-            objectives.push(currentObjective as Omit<Objective, 'id' | 'progress' | 'user_id' | 'status'>);
+      // Create main objectives
+      const objectives: Omit<Objective, 'id'>[] = [
+        {
+          title: "Successfully launch key products in Q1",
+          description: "Ensure successful platform product delivery market-wise",
+          category: "Product Launch",
+          start_date: "2024-01-01",
+          end_date: "2025-02-15",
+          progress: 0,
+          status: 'not-started',
+          user_id: userId
+        },
+        {
+          title: "Fully operational integration with Alpaca",
+          description: "Complete Alpaca integration for spot trading",
+          category: "Integration",
+          start_date: "2024-01-01",
+          end_date: "2025-03-31",
+          progress: 0,
+          status: 'not-started',
+          user_id: userId
+        },
+        {
+          title: "Risk Management in Spot Product",
+          description: "Design comprehensive risk management system",
+          category: "Risk Management",
+          start_date: "2024-01-01",
+          end_date: "2025-01-31",
+          progress: 0,
+          status: 'not-started',
+          user_id: userId
+        },
+        {
+          title: "Borrow rate system implementation",
+          description: "Implement short selling functionality",
+          category: "Trading",
+          start_date: "2024-01-01",
+          end_date: "2025-03-31",
+          progress: 0,
+          status: 'not-started',
+          user_id: userId
+        },
+        {
+          title: "Market structure economics",
+          description: "Define fee structures and economics",
+          category: "Business",
+          start_date: "2024-01-01",
+          end_date: "2025-03-31",
+          progress: 0,
+          status: 'not-started',
+          user_id: userId
+        }
+      ];
+
+      // Insert objectives
+      const { data: createdObjectives, error: objError } = await supabase
+        .from('objectives')
+        .insert(objectives)
+        .select();
+
+      if (objError) throw objError;
+      if (!createdObjectives) throw new Error('No objectives created');
+
+      // Map of objectives to their key results
+      const objectiveKeyResults: ObjectiveKeyResults = {
+        0: [ // First objective
+          {
+            description: "Validate technical implementations for order execution",
+            target_value: 100,
+            current_value: 0,
+            unit: "percentage",
+            start_date: "2024-01-01",
+            end_date: "2025-02-15"
+          },
+          {
+            description: "Ensure optimal trading experience (UX)",
+            target_value: 100,
+            current_value: 0,
+            unit: "percentage",
+            start_date: "2024-01-01",
+            end_date: "2025-01-15"
           }
+        ],
+        1: [ // Second objective
+          {
+            description: "Successfully complete end-to-end testing of API integration",
+            target_value: 100,
+            current_value: 0,
+            unit: "percentage",
+            start_date: "2024-01-01",
+            end_date: "2025-03-31"
+          },
+          {
+            description: "Ensure functionality on short selling operability",
+            target_value: 100,
+            current_value: 0,
+            unit: "percentage",
+            start_date: "2024-01-01",
+            end_date: "2025-03-31"
+          }
+        ],
+        2: [ // Third objective
+          {
+            description: "Design comprehensive risk management system",
+            target_value: 100,
+            current_value: 0,
+            unit: "percentage",
+            start_date: "2024-01-01",
+            end_date: "2025-01-31"
+          },
+          {
+            description: "Design BTC collateral management system",
+            target_value: 100,
+            current_value: 0,
+            unit: "percentage",
+            start_date: "2024-01-01",
+            end_date: "2025-01-31"
+          }
+        ],
+        3: [ // Fourth objective
+          {
+            description: "Define borrow rate fee business structure",
+            target_value: 100,
+            current_value: 0,
+            unit: "percentage",
+            start_date: "2024-01-01",
+            end_date: "2025-01-31"
+          },
+          {
+            description: "Test real-time borrow rate system",
+            target_value: 100,
+            current_value: 0,
+            unit: "percentage",
+            start_date: "2024-01-01",
+            end_date: "2025-03-31"
+          },
+          {
+            description: "Design buy-to-close mechanism",
+            target_value: 100,
+            current_value: 0,
+            unit: "percentage",
+            start_date: "2024-01-01",
+            end_date: "2025-02-15"
+          }
+        ],
+        4: [ // Fifth objective
+          {
+            description: "Design competitive margin structure",
+            target_value: 100,
+            current_value: 0,
+            unit: "percentage",
+            start_date: "2024-01-01",
+            end_date: "2025-02-15"
+          },
+          {
+            description: "Define borrow rate framework",
+            target_value: 100,
+            current_value: 0,
+            unit: "percentage",
+            start_date: "2024-01-01",
+            end_date: "2025-01-31"
+          },
+          {
+            description: "Design competitive fee structure",
+            target_value: 100,
+            current_value: 0,
+            unit: "percentage",
+            start_date: "2024-01-01",
+            end_date: "2025-01-31"
+          }
+        ]
+      };
 
-          // Start new objective
-          const startDate = cells[3]?.trim() || now;
-          const endDate = cells[4]?.trim() || now;
+      const keyResults: Omit<KeyResult, 'id'>[] = [];
 
-          currentObjective = {
-            title: cells[0].trim(),
-            description: cells[1]?.trim() || '',
-            category: cells[2]?.trim() || categories[0],
-            startDate,
-            endDate,
-            keyResults: []
-          };
-        } else if (cells[1]?.trim() && currentObjective) {
-          // It's a key result
-          const startDate = currentObjective.startDate || now;
-          const endDate = currentObjective.endDate || now;
-
-          currentObjective.keyResults = currentObjective.keyResults || [];
-          currentObjective.keyResults.push({
-            description: cells[1].trim(),
-            targetValue: parseFloat(cells[2]?.trim() || '0'),
-            currentValue: 0,
-            unit: cells[3]?.trim() || '',
-            startDate,
-            endDate,
-            progress: 0,
-            status: 'not-started'
+      // Create key results for each objective
+      createdObjectives.forEach((objective, index) => {
+        const objKeyResults = objectiveKeyResults[index];
+        if (objKeyResults) {
+          objKeyResults.forEach(kr => {
+            keyResults.push({
+              ...kr,
+              progress: 0,
+              status: 'not-started',
+              objective_id: objective.id
+            });
           });
         }
-      }
+      });
 
-      // Add last objective
-      if (currentObjective && currentObjective.title && currentObjective.keyResults?.length) {
-        objectives.push(currentObjective as Omit<Objective, 'id' | 'progress' | 'user_id' | 'status'>);
-      }
+      // Insert key results
+      const { error: krError } = await supabase
+        .from('key_results')
+        .insert(keyResults);
 
-      if (!objectives.length) {
-        throw new Error('No valid objectives found in the data');
-      }
+      if (krError) throw krError;
 
-      return objectives;
-    } catch (error) {
-      throw new Error('Failed to parse data. Please make sure it matches the expected format.');
-    }
-  };
-
-  const handleImport = async () => {
-    try {
-      setError(null);
-      const objectives = parseData(data);
-      await onImport(objectives);
       onClose();
     } catch (error) {
+      console.error('Error in bulk import:', error);
       setError(error instanceof Error ? error.message : 'Failed to import data');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -104,7 +264,7 @@ export const ImportFromSheets: React.FC<ImportFromSheetsProps> = ({
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-              Import from Google Sheets
+              Import Sample Data
             </h2>
             <button
               onClick={onClose}
@@ -119,35 +279,21 @@ export const ImportFromSheets: React.FC<ImportFromSheetsProps> = ({
           </div>
 
           <div className="space-y-4">
-            <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-              <h3 className={`text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
-                Expected Format:
-              </h3>
-              <pre className={`text-xs whitespace-pre-wrap ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                Objective Title    Description    Category    Start Date    End Date
-                    Key Result 1    Target Value    Unit
-                    Key Result 2    Target Value    Unit
-                Next Objective    Description    Category    Start Date    End Date
-                    Key Result 1    Target Value    Unit
-              </pre>
-            </div>
+            <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+              Click the button below to import sample OKRs into your dashboard.
+            </p>
 
-            <div>
-              <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
-                Paste your data here:
-              </label>
-              <textarea
-                value={data}
-                onChange={(e) => setData(e.target.value)}
-                rows={10}
-                className={`w-full px-3 py-2 rounded-lg border shadow-sm text-sm transition-colors focus:ring-2 focus:ring-opacity-50 ${
-                  isDarkMode
-                    ? 'bg-gray-700 border-gray-600 text-gray-100 focus:border-blue-500 focus:ring-blue-500'
-                    : 'bg-white border-gray-300 text-gray-900 focus:border-blue-500 focus:ring-blue-500'
-                }`}
-                placeholder="Copy and paste your data from Google Sheets here..."
-              />
-            </div>
+            <button
+              onClick={bulkImport}
+              disabled={isLoading}
+              className={`w-full px-4 py-2 rounded-lg font-medium transition-colors ${
+                isDarkMode
+                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              {isLoading ? 'Importing...' : 'Import Sample Data'}
+            </button>
 
             {error && (
               <div className={`p-3 rounded-lg text-sm ${
@@ -156,30 +302,6 @@ export const ImportFromSheets: React.FC<ImportFromSheetsProps> = ({
                 {error}
               </div>
             )}
-
-            <div className="flex justify-end gap-4">
-              <button
-                type="button"
-                onClick={onClose}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  isDarkMode
-                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleImport}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  isDarkMode
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
-                }`}
-              >
-                Import
-              </button>
-            </div>
           </div>
         </div>
       </div>
